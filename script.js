@@ -498,23 +498,38 @@ const EarthScene = (function(){
     return Math.max(1, (RADIUS/FOV_TAN) * (h/2) / wantedRadiusPx / 480);
   }
   /* the globe reads hard against the top edge with a lot of empty space
-     below it by the time the scene has zoomed in — worse as progress -> 1,
-     confirmed on both a portrait tablet and an ordinary wide desktop window,
-     so this isn't a portrait-only quirk. It does need more correction the
-     narrower the frame gets (a wide screen only needed ~0.4 before the
-     bottom caption started crowding the globe; a portrait tablet still read
-     top-heavy at that same value and wanted closer to 0.58), so this blends
-     between the two verified endpoints instead of one flat number or an
-     on/off portrait gate. Aiming slightly above the globe's true center
-     pushes its rendered position down in frame without moving the camera
-     itself, so the markers/arc (which key off the same lookAt) stay
-     geometrically correct. */
+     below it by the time the scene has zoomed in. Two prior attempts at this
+     (curve-fit against 2-3 sampled viewports) both misjudged how MUCH room
+     there actually is to work with and ended up pushing the globe's far edge
+     straight past the frame — confirmed by the numbers: at this scene's most
+     zoomed-in frame (t=1) the sphere already fills all but ~1.5deg of the
+     42deg vertical FOV, symmetric top and bottom. Any shift bigger than that
+     ~1.5deg clips one edge outright, and the previous formula was asking for
+     up to ~7.6deg there — nearly 5x over budget.
+     This version computes the real available slack from the actual FOV /
+     sphere-angular-size geometry every frame, and only ever spends a
+     bounded share of it, so the far edge always keeps a guaranteed margin
+     regardless of viewport or scroll position — no more curve-fitting
+     against a handful of sampled screens. Aiming slightly above the globe's
+     true center pushes its rendered position down in frame without moving
+     the camera itself, so the markers/arc (which key off the same lookAt)
+     stay geometrically correct. */
+  const HALF_VFOV = (FOV * Math.PI/180) / 2;
+  const SAFE_SLACK_SHARE = 0.6;   // leaves >=40% of the available margin untouched, always
   function placeCamera(progress){
     const t = clamp01(progress*1.3);
-    camera.position.z = lerp(480, 420, t) * camScale;
-    camera.position.y = lerp(30, 6, t) * camScale;
-    const narrownessT = clamp01((1.9 - camera.aspect) / 1.5);
-    camera.lookAt(0, RADIUS*lerp(0.4, 0.58, narrownessT)*t, 0);
+    const camY = lerp(30, 6, t) * camScale;
+    const camZ = lerp(480, 420, t) * camScale;
+    camera.position.z = camZ;
+    camera.position.y = camY;
+
+    const dist = Math.hypot(camY, camZ);
+    const angRadius = Math.asin(clamp01(RADIUS / dist));
+    const slack = Math.max(0, HALF_VFOV - angRadius);   // symmetric margin at dead-center, in radians
+    const baseAngle = Math.atan2(-camY, camZ);          // branch-cut-safe: measured off +Z, never near +-180deg
+    const targetAngle = baseAngle + slack * SAFE_SLACK_SHARE * t;
+    const targetY = camY + camZ * Math.tan(targetAngle);
+    camera.lookAt(0, targetY, 0);
   }
   let scene, camera, renderer, globe, landPoints3D, starField, cloudField, arcLine, arcPulse, arcPulsePoints, canvas;
   let munichMarker, bangaloreMarker;
