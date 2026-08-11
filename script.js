@@ -2313,7 +2313,7 @@ function initMusicGate(){
        already passed this and should just find the button where it belongs */
     const box = gate.getBoundingClientRect();
     const offScreen = box.bottom < 0 || box.top > window.innerHeight;
-    if(REDUCED_MOTION || offScreen){ if(withMusic) cueToMusicOn(); rest(); return; }
+    if(REDUCED_MOTION || offScreen){ rest(); return; }
 
     /* where the light is right now, mid-wander — measured before the transforms
        are cleared, so the hand-over happens exactly where the eye last saw it */
@@ -2361,7 +2361,7 @@ function initMusicGate(){
         duration: withMusic ? .95 : 1.1, ease:'power3.inOut'
       }, 'handover+=0.42')
       .to(btn, { boxShadow:'0 0 0 0 rgba(212,175,55,0)', duration:.5, ease:'power2.out' }, '-=0.5')
-      .add(()=>{ if(withMusic) cueToMusicOn(); rest(); });
+      .add(()=>{ rest(); });
   }
 
   /* ---- input ----------------------------------------------------------- */
@@ -2387,6 +2387,11 @@ function initMusicGate(){
       /* forwarding the real gesture, so the browser still counts this as the
          interaction that unblocks playback — then the craft flares and goes */
       btn.click();
+      /* fired here, not at the end of the multi-second docking timeline below —
+         music starts the instant this tap lands, so the cue needs to stop
+         calling it a "quiet experience" in that same instant, not several
+         seconds later once the craft has finished crossing the screen */
+      cueToMusicOn();
       pulse(1.35);
       gsap.delayedCall(.3, ()=> transform(true));
     }
