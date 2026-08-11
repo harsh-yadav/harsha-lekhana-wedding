@@ -2272,7 +2272,7 @@ function initMusicGate(){
   /* the cue opens by naming the quiet default, since sound is still off at that
      point — once music is actually switched on there is nothing quiet left to
      mention, so the text drops back to just the instruction */
-  const cueToMusicOn = ()=>{ if(cueLabel) cueLabel.textContent = 'Follow the light.'; };
+  const cueToMusicOn = ()=>{ if(cueLabel) cueLabel.textContent = 'Scroll to continue.'; };
 
   const S = { INTRO:'intro', PROMPT:'prompt', DISSOLVE:'dissolve', DOCKING:'docking', READY:'ready' };
   let state = S.INTRO;
