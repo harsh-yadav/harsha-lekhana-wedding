@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- width=device-width still drives every responsive breakpoint; the added
+     terms only stop pinch/double-tap zoom, which on a full-bleed scrolling
+     scene reads as the page breaking rather than as a gesture. Note iOS Safari
+     has ignored user-scalable=no since iOS 10 — pinch still works there. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Harsha &amp; Lekhana — 30 November 2026</title>
+<meta name="description" content="Munich to Bangalore. A story told across two cities, one distance, and one forever. Harsha &amp; Lekhana are getting married on 30 November 2026.">
+<meta name="theme-color" content="#050505">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23050505'/%3E%3Ctext x='50' y='64' font-size='52' text-anchor='middle' fill='%23D4AF37' font-family='Georgia,serif'%3E%26%2310084;%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     STYLES
+     ============================================================ -->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a href="#scene-details" class="skip-link">Skip to wedding details</a>
+
+<div class="progress-bar"><div class="progress-bar__fill" id="progressFill"></div></div>
+
+<nav class="dot-nav" id="dotNav" aria-label="Scene navigation"></nav>
+
+<div class="opening-flash" id="openingFlash" aria-hidden="true"></div>
+
+<button class="audio-toggle" id="audioToggle" data-playing="false" aria-label="Toggle music" aria-pressed="false">
+  <svg class="icon-on" viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M16 8a5 5 0 010 8"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>
+  <svg class="icon-off" viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M16 9l5 5M21 9l-5 5"/></svg>
+</button>
+<div class="loader" id="loader">
+  <div class="loader__bar"><div class="loader__bar-fill" id="loaderFill"></div></div>
+</div>
+
+<!-- shown only on a phone held sideways; see the orientation block in style.css -->
+<div class="rotate-notice" id="rotateNotice">
+  <div class="rotate-notice-inner">
+    <svg class="rotate-notice-icon" viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="17" y="6" width="14" height="24" rx="2.5"/>
+      <path d="M22 9.5h4"/>
+      <path d="M13 36a13 13 0 0022 0"/>
+      <path d="M31 30v6h-6"/>
+    </svg>
+    <p class="rotate-notice-title">Please turn your phone upright.</p>
+    <p class="rotate-notice-sub">This story is told in portrait.</p>
+  </div>
+</div>
+
+<main id="top">
+
+  <!-- SCENE 0 — MUSIC GATE
+       Asking before the story starts, rather than leaving an unread icon in a
+       corner. Pressing the placard is "yes"; scrolling past it is "no". Either
+       way the satellite flies down to the corner and becomes the music button,
+       so the control is introduced rather than just appearing. -->
+  <section class="scene" id="scene-gate" data-scene-name="Music" aria-label="Music">
+    <canvas class="scene-canvas" id="starsCanvasGate"></canvas>
+    <div class="gate-inner">
+      <!-- data-stage drives the plaque: "tap" first, "sound" after the craft has
+           been woken. Both plaque states live in the same grid cell so the panel
+           never changes size and the two lines cross-morph in place. -->
+      <button type="button" class="gate-sat" id="gateSat" data-stage="tap" aria-label="Continue">
+        <span class="gate-sat-inner">
+          <span class="gate-craft">
+            <svg class="gate-sat-svg" viewBox="0 0 240 132" aria-hidden="true">
+              <defs>
+                <linearGradient id="gsPanel" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#2b3542"/>
+                  <stop offset=".5" stop-color="#151b23"/>
+                  <stop offset="1" stop-color="#0a0e13"/>
+                </linearGradient>
+                <linearGradient id="gsHull" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#454b55"/>
+                  <stop offset=".45" stop-color="#1d2127"/>
+                  <stop offset="1" stop-color="#0c0e12"/>
+                </linearGradient>
+                <radialGradient id="gsCore">
+                  <stop offset="0" stop-color="#fff8e6"/>
+                  <stop offset=".3" stop-color="#f2d494"/>
+                  <stop offset=".62" stop-color="rgba(212,175,55,.42)"/>
+                  <stop offset="1" stop-color="rgba(212,175,55,0)"/>
+                </radialGradient>
+                <radialGradient id="gsHalo">
+                  <stop offset="0" stop-color="rgba(232,199,122,.20)"/>
+                  <stop offset="1" stop-color="rgba(232,199,122,0)"/>
+                </radialGradient>
+              </defs>
+
+              <circle class="gs-halo" cx="120" cy="66" r="62" fill="url(#gsHalo)"/>
+
+              <!-- everything structural lives in one group so the transform can
+                   dissolve the craft and leave only its light behind -->
+              <g class="gs-body">
+
+              <!-- solar wings: graphite cells in a dark frame, one champagne
+                   edge each where the core light catches them -->
+              <g class="gs-wing">
+                <rect x="6" y="46" width="80" height="40" rx="1.5" fill="url(#gsPanel)" stroke="#3b4453" stroke-width=".9"/>
+                <path d="M6 66h80M26 46v40M46 46v40M66 46v40" stroke="#2c343f" stroke-width=".8"/>
+                <path d="M6 47.2h80" stroke="rgba(232,199,122,.22)" stroke-width=".8"/>
+                <path d="M86 50v32" stroke="rgba(232,199,122,.3)" stroke-width="1"/>
+              </g>
+              <g class="gs-wing">
+                <rect x="154" y="46" width="80" height="40" rx="1.5" fill="url(#gsPanel)" stroke="#3b4453" stroke-width=".9"/>
+                <path d="M154 66h80M174 46v40M194 46v40M214 46v40" stroke="#2c343f" stroke-width=".8"/>
+                <path d="M154 47.2h80" stroke="rgba(232,199,122,.22)" stroke-width=".8"/>
+                <path d="M154 50v32" stroke="rgba(232,199,122,.3)" stroke-width="1"/>
+              </g>
+
+              <!-- booms -->
+              <path d="M84 66h12M144 66h12" stroke="#525b69" stroke-width="2.6" stroke-linecap="round"/>
+              <path d="M90 60v12M150 60v12" stroke="#3d4552" stroke-width="1.1"/>
+
+              <!-- hull: octagonal drum, lit from the upper left -->
+              <path d="M102 36h36l14 14v32l-14 14h-36l-14-14V50z" fill="url(#gsHull)" stroke="#586170" stroke-width="1.1"/>
+              <path d="M102 36h36l14 14" fill="none" stroke="rgba(200,210,225,.32)" stroke-width="1"/>
+              <path d="M138 96h-36l-14-14" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="1"/>
+              <path d="M96 52h5M139 82h5M96 80h5" stroke="#798391" stroke-width="1"/>
+
+              <!-- ion core: recessed emitter, concentric containment rings -->
+              <circle cx="120" cy="66" r="27" fill="none" stroke="rgba(212,175,55,.34)" stroke-width="1"/>
+              <circle cx="120" cy="66" r="21" fill="none" stroke="rgba(212,175,55,.6)" stroke-width="1.4"/>
+              <circle cx="120" cy="66" r="14" fill="none" stroke="rgba(212,175,55,.28)" stroke-width=".8"/>
+              <path d="M120 39v6M120 87v6M93 66h6M141 66h6" stroke="rgba(232,199,122,.55)" stroke-width="1.1"/>
+
+              <!-- comms mast and low-gain dish -->
+              <path d="M120 36V16" stroke="#68717f" stroke-width="1.4"/>
+              <path d="M114 20h12" stroke="#4d5665" stroke-width="1.1"/>
+              <circle cx="120" cy="12.5" r="4.4" fill="none" stroke="#8891a0" stroke-width="1.2"/>
+              <circle cx="120" cy="12.5" r="1.3" fill="rgba(232,199,122,.85)"/>
+              <path d="M120 96v14M111 110h18" stroke="#525b69" stroke-width="1.4" stroke-linecap="round"/>
+              </g>
+
+              <!-- the light itself: outlives the structure during the transform -->
+              <circle class="gs-core-glow" cx="120" cy="66" r="22" fill="url(#gsCore)"/>
+              <circle class="gs-core" cx="120" cy="66" r="5.4" fill="#fff6de"/>
+              <circle class="gs-ripple" cx="120" cy="66" r="10" fill="none"
+                      stroke="rgba(242,212,148,.9)" stroke-width="1.6" opacity="0"/>
+            </svg>
+          </span>
+        </span>
+        <span class="gate-plaque">
+          <span class="gate-plaque-state gate-plaque-tap"><b>Tap to continue</b></span>
+          <span class="gate-plaque-state gate-plaque-sound">
+            <b>Press for sound</b>
+            <span>Music &middot; on / off</span>
+          </span>
+        </span>
+      </button>
+    </div>
+    <div class="scroll-hint" id="gateScrollCue" aria-hidden="true">
+      <span class="scroll-hint-label">For a quiet experience, follow the light.</span>
+      <span class="scroll-hint-trail"></span>
+      <span class="scroll-hint-particle"></span>
+    </div>
+  </section>
+
+  <!-- SCENE 1 — OPENING -->
+  <section class="scene" id="scene-opening" data-scene-name="Opening" aria-label="Opening" data-cinematic="true">
+    <canvas class="scene-canvas" id="starsCanvasOpening"></canvas>
+    <div class="scene-content opening-greeting">
+      <p class="opening-greeting-text" id="openingGreeting">Welcome</p>
+      <p class="opening-greeting-sub">Curious to see where this story takes you?</p>
+    </div>
+    <div class="scroll-hint" id="openingScrollCue" aria-hidden="true">
+      <span class="scroll-hint-label">Swipe to follow the light.</span>
+      <span class="scroll-hint-trail"></span>
+      <span class="scroll-hint-particle"></span>
+    </div>
+  </section>
+
+  <!-- SCENE 2 — LIVING EARTH -->
+  <section class="scene scene-tall earth-tall" id="scene-earth" data-scene-name="Living Earth" aria-label="Living Earth" data-cinematic="true">
+    <div class="pin-wrap">
+      <canvas class="scene-canvas" id="earthCanvas"></canvas>
+      <div class="earth-caption" id="earth-label-munich">
+        <b>&#128205; Munich</b>
+        <span id="munichTime">&mdash;</span>
+        <span class="earth-caption-date" id="munichDate"></span>
+        <span class="earth-caption-weather" id="munichWeather"></span>
+      </div>
+      <div class="earth-caption" id="earth-label-bangalore">
+        <b>&#128205; Bangalore</b>
+        <span id="bangaloreTime">&mdash;</span>
+        <span class="earth-caption-date" id="bangaloreDate"></span>
+        <span class="earth-caption-weather" id="bangaloreWeather"></span>
+      </div>
+      <div class="earth-distance" id="earthDistance">
+        <div class="km" id="earthDistanceKm">7,165 km apart</div>
+        <div class="lbl">Two cities. One story.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENE 3 — MUNICH -->
+  <section class="scene city-scene" id="scene-munich" data-scene-name="Munich" aria-label="Munich">
+    <div class="city-sky"></div>
+    <div class="moon-ambient" aria-hidden="true"></div>
+    <div class="light-rays" aria-hidden="true"></div>
+    <canvas class="scene-canvas city-clouds" id="munichClouds"></canvas>
+    <canvas class="scene-canvas city-glow" id="munichParticles"></canvas>
+    <canvas class="scene-canvas city-birds" id="munichBirds"></canvas>
+    <div class="city-content scene-content">
+      <!-- real-text stand-in for the name baked into munichline.jpg; only shown
+           on portrait viewports, where the photo's own lockup can't fit -->
+      <p class="city-title">
+        <span class="city-title-name">Munich</span>
+        <span class="city-title-country">Germany</span>
+      </p>
+      <p class="scene-caption will-reveal">A life built beneath Munich skies.</p>
+      <p class="scene-subline will-reveal">A city that became home, long before this story began.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 4 — BANGALORE -->
+  <section class="scene city-scene" id="scene-bangalore" data-scene-name="Bangalore" aria-label="Bangalore">
+    <div class="city-sky"></div>
+    <div class="golden-haze" aria-hidden="true"></div>
+    <canvas class="scene-canvas city-glow" id="bangaloreParticles"></canvas>
+    <canvas class="scene-canvas city-birds" id="bangaloreBirds"></canvas>
+    <div class="city-content scene-content">
+      <p class="city-title">
+        <span class="city-title-name">Bangalore</span>
+        <span class="city-title-country">India</span>
+      </p>
+      <p class="scene-caption will-reveal">Where home has always been.</p>
+      <p class="scene-subline will-reveal">The city where her world began, and where this story will come together.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 5 — CONNECTION (now the complete story: 18 May through 30 November) -->
+  <section class="scene scene-tall connection-tall" id="scene-connection" data-scene-name="Connection" aria-label="Our story" data-cinematic="true">
+    <div class="pin-wrap">
+      <canvas class="scene-canvas" id="connectionCanvas"></canvas>
+      <div class="connection-caption" id="connectionCaption">
+        <p class="connection-caption-date" id="connectionCaptionDate"></p>
+        <p class="connection-caption-text" id="connectionCaptionText">A new chapter begins.</p>
+      </div>
+      <div class="countdown-block connection-countdown" id="scene-countdown">
+        <p class="connection-countdown-heading">The day two journeys become one.</p>
+        <div class="countdown-grid" id="countdownGrid"></div>
+        <p class="connection-countdown-date">30 November 2026</p>
+        <div class="countdown-married" id="countdownMarried">A new chapter begins.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENES 9-11 MERGED: Save the Date -> Countdown -> Details, one continuous flow
+       (previously three separate full-height scenes with a lot of empty space between
+       them, and a duplicate "names + date" hero that repeated the poster's reveal) -->
+  <section class="scene reveal-flow" id="scene-savedate" data-scene-name="Countdown & Details" aria-label="Countdown and wedding details">
+    <canvas class="scene-canvas" id="savedateParticles"></canvas>
+    <div class="reveal-flow-inner">
+      <div class="details-block" id="scene-details">
+        <p class="eyebrow will-reveal"></p>
+        <h2 class="scene-caption will-reveal" style="opacity:1; transform:none;">The celebration</h2>
+        <!-- non-breaking spaces keep the two names on one line together, whatever the viewport -->
+        <p class="details-intro will-reveal">With the blessings of their families, Harsha&nbsp;and&nbsp;Lekhana invite you to celebrate their wedding.</p>
+        <p class="poster-caption will-reveal">A day worth remembering.</p>
+        <div class="poster-frame will-reveal" id="posterFrame">
+          <img id="posterImg" alt="Harsha and Lekhana — Save the Date, 30 November 2026">
+          <div class="poster-border"></div>
+        </div>
+        <div class="details-grid" id="detailsGrid"></div>
+        <div class="details-map">
+          <div class="map-frame" id="mapFrame">
+            <div class="map-placeholder" id="mapPlaceholder">Map link coming soon</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENDING -->
+  <section class="scene" id="scene-ending" data-scene-name="Ending" aria-label="Ending" data-cinematic="true">
+    <canvas class="scene-canvas" id="endingCanvas"></canvas>
+    <canvas class="scene-canvas" id="endingCanvasLanterns"></canvas>
+    <div class="ending-inner">
+      <!-- one flowing paragraph rather than a line each: on its own line the
+           second sentence read as a break in the thought -->
+      <div class="ending-lines">
+        <p class="ending-line">From one city to another, one chapter to the next. Two peoples, Two journeys.</p>
+      </div>
+      <!-- one continuous sentence: the tail was a bare <p> outside
+           .ending-distance, so it fell back to body type at a smaller size,
+           missed the scroll reveal, and sat on a line of its own -->
+      <p class="ending-distance">7,165 kilometres apart from each other, <span class="ending-distance-zero">striving for a journey of togetherness.</span></p>
+      <p class="ending-invite">Looking forward to sharing this beautiful beginning with you.</p>
+      <h2 class="ending-names">Harsha <span class="amp">&#10084;</span> Lekhana</h2>
+      <div class="ending-date">30 November 2026 &middot; Bangalore</div>
+      <a href="#" class="ics-link" id="icsLink" download="harsha-lekhana-wedding.ics">+ Add our celebrations to your calendar</a>
+    </div>
+  </section>
+
+</main>
+
+<div class="sr-only" role="doc-subtitle">
+  The story began with a first glimpse in Bangalore on 18 May 2026, followed by a first conversation on 24 May and a first message on 31 May. A promise was made in Bangalore on 25 June, the miles from Bangalore to Munich came on 28 June, and the story continued across different skies from 29 June. Harsha and Lekhana are getting married on 30 November 2026 in Bangalore.
+</div>
+
+<!-- ============================================================
+     LIBRARIES (CDN)
+     ============================================================ -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

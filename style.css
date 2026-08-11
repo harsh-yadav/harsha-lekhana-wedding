@@ -1,0 +1,960 @@
+:root{
+  /* ---- brand tokens (from spec) ---- */
+  --bg:#050505;
+  --gold:#D4AF37;
+  --ivory:#F8F6F2;
+  --accent:#E8C77A;
+
+  /* ---- supporting tokens (added for the two-city contrast the brief calls for) ---- */
+  --munich-cool:#5C82AE;
+  --munich-deep:#0B1420;
+  --bangalore-warm:#E8973B;
+  --maroon:#5C1F2E;
+
+  --gold-rgb:212,175,55;
+  --accent-rgb:232,199,122;
+  --munich-rgb:92,130,174;
+
+  --font-display:'Fraunces', Georgia, serif;
+  --font-body:'Manrope', -apple-system, sans-serif;
+  --font-mono:'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-in-out:cubic-bezier(.65,0,.35,1);
+
+  --scene-pad: clamp(24px, 6vw, 96px);
+
+  /* shared size for every small gold/ivory uppercase eyebrow-style label
+     (scene eyebrows, dates, countdown/detail labels) so they read as one
+     consistent system rather than each picking its own size */
+  --caps-size: clamp(13px, 2.6vw, 18px);
+}
+
+*{box-sizing:border-box;}
+html{
+  background:var(--bg); scroll-behavior:auto;
+  /* iOS inflates text in landscape unless this is pinned */
+  -webkit-text-size-adjust:100%; text-size-adjust:100%;
+}
+html.no-js-scroll{scroll-behavior:auto;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ivory);
+  font-family:var(--font-body);
+  overflow-x:hidden;
+  /* the page only ever pans vertically, so pan-y costs nothing and rules out
+     the pinch and double-tap zoom that leave a pinned full-bleed scene sitting
+     half off-screen. Backs up the viewport meta, and unlike it this is honoured
+     on iOS. The map keeps its own gestures below. */
+  touch-action:pan-y;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  -webkit-tap-highlight-color:rgba(var(--gold-rgb),.18);
+}
+
+::selection{background:rgba(var(--gold-rgb),.35); color:var(--ivory);}
+
+img,canvas,video{display:block; max-width:100%;}
+
+h1,h2,h3{font-family:var(--font-display); font-weight:400; margin:0; letter-spacing:.01em;}
+
+a{color:inherit;}
+
+button{font-family:var(--font-body); cursor:pointer;}
+
+/* ---------- focus visibility (accessibility floor) ---------- */
+:focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:4px;
+  border-radius:2px;
+}
+
+/* ---------- visually-hidden but screen-reader-available text ---------- */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+/* ============================================================
+   PERSISTENT CHROME
+   ============================================================ */
+
+.skip-link{
+  position:fixed; z-index:1000;
+  top:calc(14px + env(safe-area-inset-top));
+  left:calc(14px + env(safe-area-inset-left));
+  background:var(--bg); color:var(--gold);
+  padding:10px 18px; font-size:13px; letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid rgba(var(--gold-rgb),.4); border-radius:2px;
+  transform:translateY(-140%); transition:transform .3s var(--ease-out);
+  text-decoration:none;
+}
+.skip-link:focus{transform:translateY(0);}
+
+.progress-bar{
+  position:fixed; top:env(safe-area-inset-top); left:0; height:2px; width:100%; z-index:999;
+  background:rgba(255,255,255,.06);
+}
+.progress-bar__fill{
+  height:100%; width:0%;
+  background:linear-gradient(90deg, var(--gold), var(--accent));
+  box-shadow:0 0 8px rgba(var(--gold-rgb),.7);
+  transition:width .08s linear;
+}
+
+.audio-toggle{
+  position:fixed; z-index:900;
+  bottom:calc(28px + env(safe-area-inset-bottom));
+  right:calc(28px + env(safe-area-inset-right));
+  width:46px; height:46px; border-radius:50%;
+  background:rgba(5,5,5,.55); backdrop-filter:blur(12px);
+  border:1px solid rgba(var(--gold-rgb),.35);
+  display:flex; align-items:center; justify-content:center;
+  /* pointer-events too: until the gate hands over, this is a fully invisible
+     button sitting over the corner of the opening scene, and it was still
+     catching taps there */
+  opacity:0; transform:scale(.85); pointer-events:none;
+  transition:opacity .8s var(--ease-out), transform .8s var(--ease-out), border-color .3s;
+}
+.audio-toggle.is-visible{opacity:1; transform:scale(1); pointer-events:auto;}
+@media (hover:hover){ .audio-toggle:hover{border-color:rgba(var(--gold-rgb),.8);} }
+.audio-toggle svg{width:18px; height:18px; stroke:var(--gold); fill:none;}
+.audio-toggle .icon-off{display:none;}
+.audio-toggle[data-playing="false"] .icon-on{display:none;}
+.audio-toggle[data-playing="false"] .icon-off{display:block;}
+/* the icon says "sound" but not "there is music here, press this" — so it gets
+   a name on first arrival, sitting flush against the button and matching it.
+   Shown and retired from initLoaderAndOpening(). */
+/* ---------- SCENE 0 — the music gate ----------
+   A satellite holding a placard, centred on its own screen before the story
+   starts. Pressing it turns the music on; scrolling past it declines. Either
+   way script.js flies this satellite down into the corner and hands over to
+   .audio-toggle, so the button arrives as the same object rather than as a new
+   one appearing from nowhere. */
+/* .scene is a plain block — the other scenes place their content themselves,
+   so this one centres its own */
+#scene-gate{
+  background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  padding:0 var(--scene-pad);
+}
+.gate-inner{ position:relative; z-index:5; display:flex; justify-content:center; }
+.gate-sat{
+  background:none; border:0; padding:0; margin:0; color:inherit; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:56px;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* Two nested wrappers so the craft can hold two independent motions without
+   them fighting over one transform: the outer one carries it across space, the
+   inner one turns it. Both are cleared before the flight to the corner, because
+   a transformed (or filtered) ancestor would make the fixed-position hand-off
+   resolve against it instead of the viewport.
+
+   The travel is driven from initMusicGate() rather than a keyframe: it runs leg
+   by leg to a fresh random point each time, so the path never repeats the way a
+   looping animation does. Outer element carries the legs, inner one the roll. */
+.gate-sat-inner{ display:block; }
+.gate-craft{ display:block; }
+.gate-sat-svg{
+  width:clamp(196px, 62vw, 330px); height:auto; display:block;
+  overflow:visible;
+}
+.gs-core, .gs-core-glow{ transform-box:fill-box; transform-origin:center; }
+.gs-core-glow{ animation:coreBreathe 5.5s ease-in-out infinite; }
+.gs-halo{ animation:haloBreathe 7s ease-in-out infinite; }
+
+@keyframes coreBreathe{ 0%,100%{ opacity:.82; } 50%{ opacity:1; } }
+@keyframes haloBreathe{ 0%,100%{ opacity:.7; } 50%{ opacity:1; } }
+
+/* one panel, two instructions stacked in the same grid cell — it never resizes,
+   so the change of instruction reads as this plaque rewriting itself */
+.gate-plaque{
+  display:grid; place-items:center;
+  padding:13px 22px; border-radius:8px;
+  background:rgba(5,5,5,.6); backdrop-filter:blur(12px);
+  border:1px solid rgba(var(--gold-rgb),.35);
+  animation:audioPulse 2.8s ease-in-out infinite;
+  transition:border-color .5s var(--ease-out);
+}
+.gate-plaque-state{
+  grid-area:1/1; display:flex; flex-direction:column; align-items:center; gap:5px;
+  transition:opacity .5s var(--ease-out), transform .5s var(--ease-out), filter .5s var(--ease-out);
+}
+.gate-plaque-state b{
+  font-family:var(--font-body); font-weight:600; font-size:clamp(12px,1.3vw,14px);
+  letter-spacing:.18em; text-transform:uppercase; color:var(--accent); white-space:nowrap;
+}
+.gate-plaque-state span{
+  font-family:var(--font-body); font-weight:400; font-size:clamp(10px,1vw,11px);
+  letter-spacing:.14em; text-transform:uppercase; color:rgba(248,246,242,.5); white-space:nowrap;
+}
+.gate-sat[data-stage="tap"]   .gate-plaque-sound,
+.gate-sat[data-stage="sound"] .gate-plaque-tap{
+  opacity:0; filter:blur(3px); pointer-events:none;
+}
+.gate-sat[data-stage="tap"]   .gate-plaque-sound{ transform:translateY(7px) scale(.97); }
+.gate-sat[data-stage="sound"] .gate-plaque-tap{   transform:translateY(-7px) scale(.97); }
+.gate-sat[data-stage="sound"] .gate-plaque{ border-color:rgba(var(--gold-rgb),.6); }
+
+@media (hover:hover){ .gate-sat:hover .gate-plaque{ border-color:rgba(var(--gold-rgb),.75); } }
+@media (prefers-reduced-motion: reduce){
+  .gate-plaque, .gs-core-glow, .gs-halo{ animation:none; }
+}
+body.reduced-motion .gate-plaque,
+body.reduced-motion .gs-core-glow,
+body.reduced-motion .gs-halo{ animation:none; }
+
+/* worn only while the control is crossing the screen from the satellite to its
+   corner — the light it was made of, still cooling. Removed on arrival, so the
+   resting button is exactly the button that was always there. */
+.audio-toggle.is-docking{
+  box-shadow:0 0 26px 6px rgba(var(--gold-rgb),.42), 0 0 70px 18px rgba(var(--gold-rgb),.16);
+  /* the resting button carries an .8s transition on transform and opacity for
+     its own fade-in. While the crossing is being driven frame by frame that
+     transition would lag every frame by .8s and smear the whole flight, so it
+     is off for the duration and back the moment it lands. */
+  animation:none; transition:none;
+}
+
+/* a slow pulse draws the eye to it while music is off — this button is now
+   the only way playback ever starts, so it needs to actually get noticed */
+.audio-toggle[data-playing="false"].is-visible{ animation:audioPulse 2.6s ease-in-out infinite; }
+@keyframes audioPulse{
+  0%,100%{ box-shadow:0 0 0 0 rgba(var(--gold-rgb),.35); }
+  50%{ box-shadow:0 0 0 8px rgba(var(--gold-rgb),0); }
+}
+@media (prefers-reduced-motion: reduce){
+  .audio-toggle[data-playing="false"].is-visible{ animation:none; }
+}
+body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:none; }
+
+.dot-nav{
+  position:fixed; right:calc(26px + env(safe-area-inset-right)); top:50%; transform:translateY(-50%);
+  z-index:900; display:flex; flex-direction:column; gap:14px;
+  opacity:0; transition:opacity 1s var(--ease-out);
+}
+.dot-nav.is-visible{opacity:1;}
+.dot-nav button{
+  width:7px; height:7px; border-radius:50%; padding:0;
+  background:rgba(248,246,242,.25); border:none;
+  transition:all .4s var(--ease-out);
+}
+.dot-nav button.is-active{
+  background:var(--gold); box-shadow:0 0 10px rgba(var(--gold-rgb),.8);
+  height:22px; border-radius:4px;
+}
+@media (max-width:860px){ .dot-nav{display:none;} }
+
+/* ============================================================
+   LOADER
+   ============================================================ */
+.loader{
+  position:fixed; inset:0; z-index:2000; background:var(--bg);
+  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:22px;
+  transition:opacity 1.1s var(--ease-in-out), visibility 1.1s;
+}
+.loader.is-done{opacity:0; visibility:hidden; pointer-events:none;}
+.loader__bar{width:160px; height:1px; background:rgba(255,255,255,.12); overflow:hidden;}
+.loader__bar-fill{height:100%; width:0%; background:var(--gold); transition:width .25s linear;}
+
+/* ============================================================
+   SCENE PRIMITIVES
+   ============================================================ */
+/* ---------- viewport height on mobile ----------
+   Plain 100vh is the *largest* viewport, so with a browser address bar on
+   screen every full-height scene was taller than what you can actually see
+   and the bottom of each one was cut off. 100svh is the smallest viewport —
+   it always fits, and unlike dvh it does not change while the address bar
+   hides, so a pinned scene can't resize mid-scroll and jump. Each vh line
+   stays first as the fallback for browsers without svh. */
+.scene{
+  position:relative; width:100%; overflow:hidden;
+  min-height:100vh;
+  min-height:100svh;
+}
+.scene-tall{ height:260vh; height:260svh; }
+.scene-tall.earth-tall{ height:170vh; height:170svh; }
+/* the connection scene is the whole story, scrubbed — its height IS the
+   pacing. 1060svh over 8 beats gives each beat ~1.2 screen-heights of
+   scroll to play out, which is what makes it read as cinematic rather
+   than hurried. Lower this one number to speed the entire scene up. */
+/* 1000 rather than 1060 because the 29 June beat now runs at half a slot
+   (BEAT_WEIGHTS in script.js): the shorter grid is renormalised back to 0..1,
+   so without trimming the scene the saved progress would just be handed to the
+   other beats. At this height every full-weight beat still spans 108vh of
+   scroll, exactly as before, and the short one spans 54vh. */
+.scene-tall.connection-tall{ height:1000vh; height:1000svh; }
+.pin-wrap{
+  position:relative; width:100%; overflow:hidden;
+  height:100vh;
+  height:100svh;
+  display:flex; align-items:center; justify-content:center;
+}
+.scene-canvas{ position:absolute; inset:0; width:100%; height:100%; }
+
+.scene-content{
+  position:relative; z-index:5; width:100%; max-width:1180px; margin:0 auto;
+  padding:0 var(--scene-pad); text-align:center;
+}
+
+.eyebrow{
+  font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.32em; text-transform:uppercase;
+  color:var(--accent); opacity:.85; margin:0 0 18px;
+}
+.scene-caption{
+  font-family:var(--font-display); font-weight:400; font-style:italic;
+  font-size:clamp(22px, 3.4vw, 40px); line-height:1.35; color:var(--ivory);
+  margin:0; opacity:0; transform:translateY(22px);
+}
+.scene-subline{
+  font-family:var(--font-body); font-weight:400; font-size:clamp(13px,1.1vw,15px);
+  line-height:1.6; color:rgba(248,246,242,.62); max-width:34ch;
+  margin:14px auto 0; opacity:0; transform:translateY(16px);
+}
+.scene-date{
+  font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em; text-transform:uppercase;
+  color:var(--gold); margin-bottom:14px; opacity:0; transform:translateY(10px);
+}
+
+/* ---------- moonlight ---------- */
+.moon-ambient{
+  position:absolute; top:-8%; left:50%; transform:translateX(-50%); pointer-events:none;
+  width:56vw; height:56vw; max-width:640px; max-height:640px; border-radius:50%;
+  background:radial-gradient(circle, rgba(234,240,246,.10), transparent 68%);
+}
+
+.earth-caption span,
+.earth-distance .km,
+.flip-unit-label{
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums;
+}
+
+.scroll-hint{
+  position:absolute; bottom:52px; left:50%; transform:translateX(-50%);
+  width:2px; height:96px; z-index:6;
+  opacity:0; transition:opacity 1.2s var(--ease-out);
+}
+.scroll-hint.is-visible{ opacity:.9; }
+/* once the music choice is behind them the light is the only thing left asking
+   to be followed, so it comes fully up */
+.scroll-hint.is-primed.is-visible{ opacity:1; }
+.scroll-hint-label{
+  position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+  margin-bottom:14px; white-space:nowrap;
+  font-family:var(--font-body); font-weight:500;
+  font-size:clamp(13px,1.1vw,15px); letter-spacing:.28em; text-transform:uppercase;
+  color:rgba(248,246,242,.72);
+  animation:scrollLabelPulse 2.8s ease-in-out infinite;
+}
+@keyframes scrollLabelPulse{ 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
+/* the gate's own cue can carry a full sentence (while sound is still off)
+   rather than the two-to-four word lines every other scroll-hint uses — at
+   this letter-spacing, one nowrap line of it runs wider than a phone screen
+   and hangs off both edges. It wraps and centers on the same anchor point
+   instead, onto as many lines as it needs; the shorter cues elsewhere, and
+   this one's own shorter text once sound is on, are unaffected either way. */
+#gateScrollCue .scroll-hint-label{
+  white-space:normal; text-align:center; line-height:1.5;
+  width:max-content; max-width:min(80vw, 300px);
+}
+.scroll-hint-trail{
+  position:absolute; inset:0; border-radius:2px;
+  background:linear-gradient(180deg, transparent, rgba(var(--gold-rgb),.4) 50%, transparent 100%);
+  opacity:.55;
+}
+.scroll-hint-particle{
+  position:absolute; left:50%; top:0; width:6px; height:6px; margin-left:-3px; border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 10px 3px rgba(var(--gold-rgb),.85), 0 -20px 22px -8px rgba(var(--gold-rgb),.55);
+  animation:scrollParticleFall 2.8s cubic-bezier(.45,0,.55,1) infinite;
+}
+@keyframes scrollParticleFall{
+  0%{ transform:translateY(0); opacity:0; }
+  12%{ opacity:1; }
+  85%{ opacity:1; }
+  100%{ transform:translateY(90px); opacity:0; }
+}
+/* full-screen wash used once, on the first scroll — the light the
+   visitor follows from the opening into the rest of the story */
+.opening-flash{
+  position:fixed; inset:0; z-index:960; pointer-events:none; opacity:0;
+  background:radial-gradient(circle at 50% 82%, rgba(var(--gold-rgb),.55), transparent 62%);
+}
+.opening-flash.is-active{ animation:openingFlash 1.15s ease-out forwards; }
+@keyframes openingFlash{
+  0%{ opacity:0; }
+  38%{ opacity:.85; }
+  100%{ opacity:0; }
+}
+
+/* ============================================================
+   SCENE 1 — OPENING
+   ============================================================ */
+/* same fixed-vs-live viewport gap as .city-scene, and the same fix — not
+   pinned, so nothing needs its height to stay locked to the small viewport.
+   It reads as invisible here because this scene's background is the same
+   near-black as its neighbours, but the underlying box was falling short of
+   the real screen just the same. */
+#scene-opening{
+  background:var(--bg); height:100vh;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.opening-greeting{ text-align:center; opacity:0; }
+.opening-greeting-text{
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(28px, 4.6vw, 54px); color:rgba(248,246,242,.95); margin:0 0 .5em;
+}
+/* the small light sans read as interface copy sitting under a display line.
+   Set as a title-card subtitle instead — the same gold small-caps the rest of
+   the site uses for its eyebrows, under a short rule that ties it to the
+   greeting rather than leaving it floating. */
+.opening-greeting-sub{
+  font-family:var(--font-body); font-weight:500; font-size:clamp(11px,1.05vw,13px);
+  letter-spacing:.24em; text-transform:uppercase; line-height:1.9;
+  color:var(--accent); margin:0 auto; max-width:34ch; text-wrap:balance;
+}
+.opening-greeting-sub::before{
+  content:''; display:block; width:54px; height:1px; margin:0 auto 20px;
+  background:linear-gradient(90deg, transparent, rgba(var(--gold-rgb),.75), transparent);
+}
+
+/* ============================================================
+   SCENE 2 — LIVING EARTH
+   ============================================================ */
+#scene-earth .pin-wrap{ background:var(--bg); }
+.earth-caption{
+  position:absolute; z-index:6; font-family:var(--font-body);
+  font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--ivory);
+  display:flex; flex-direction:column; gap:4px; opacity:0; transition:opacity .8s var(--ease-out);
+  /* shrink-to-fit against the positioned edge means a caption pinned near the
+     right of a narrow screen wraps mid-word ("Bangalor / e") instead of moving;
+     max-content keeps it one clean block so the pin logic can nudge it inward */
+  width:max-content; text-shadow:0 1px 10px rgba(0,0,0,.75);
+}
+.earth-caption b{ font-family:var(--font-display); font-style:italic; font-size:20px; letter-spacing:0; text-transform:none; color:var(--gold); }
+.earth-caption-date{ font-size:10px; letter-spacing:.2em; color:rgba(248,246,242,.5); }
+.earth-caption-weather{ font-size:10px; letter-spacing:.14em; text-transform:none; font-style:italic; font-family:var(--font-display); color:var(--accent); }
+.earth-caption.is-visible{opacity:1;}
+#earth-label-munich{ top:24%; left:16%; text-align:left; }
+#earth-label-bangalore{ bottom:22%; right:14%; text-align:right; }
+.earth-distance{
+  position:absolute; bottom:64px; left:50%; transform:translateX(-50%); z-index:6;
+  text-align:center; opacity:0; transition:opacity .8s var(--ease-out);
+  /* left:50% leaves only half the frame to shrink-to-fit into, so on a phone
+     "7,165 km apart" broke after "km". Size to the content instead. */
+  width:max-content; max-width:92vw;
+}
+.earth-distance.is-visible{opacity:1;}
+.earth-distance .km{ font-size:clamp(28px,4vw,44px); color:var(--ivory); }
+.earth-distance .lbl{ font-size:var(--caps-size); letter-spacing:.3em; text-transform:uppercase; color:var(--accent); margin-top:4px; }
+
+/* ============================================================
+   SCENE 3 / 4 — MUNICH & BANGALORE
+   ============================================================ */
+/* svh is the *smallest* viewport (address bar shown) — right for the pinned
+   scenes above, where the box must never resize mid-scrub, but wrong here:
+   this scene isn't pinned, so once the bar retracts on scroll the real,
+   visible viewport grows past 100svh and this box stopped growing with it.
+   The gap that opened up below it exposed bare page background — the very
+   dark connection scene sitting right underneath — as a flat black band
+   across the bottom of the screen, with the fixed audio button floating in
+   it looking like it belonged to that next scene rather than this one. dvh
+   tracks the actual visible viewport continuously, so the box's bottom edge
+   always meets the real edge of the screen; nothing pinned relies on this
+   scene's height staying fixed, so there's no resize-jump risk in tracking it. */
+.city-scene{ height:100vh; position:relative; }
+.city-sky{ position:absolute; inset:0; }
+/* the color wash sits on top of the photo as a semi-transparent tint (keeps
+   captions legible and the mood consistent); the solid gradient underneath
+   is the fallback shown if the photo file isn't present yet */
+#scene-munich .city-sky{
+  background:
+    linear-gradient(180deg, rgba(11,20,32,.72) 0%, rgba(20,34,54,.55) 45%, rgba(38,64,92,.4) 100%),
+    url('munichline.jpg') center/cover no-repeat,
+    linear-gradient(180deg,#0B1420 0%, #142236 45%, #26405c 100%);
+}
+#scene-bangalore .city-sky{
+  background:
+    linear-gradient(180deg, rgba(26,15,8,.72) 0%, rgba(58,29,15,.55) 45%, rgba(122,66,24,.4) 100%),
+    url('bangalore_line.jpg') center/cover no-repeat,
+    linear-gradient(180deg,#1a0f08 0%, #3a1d0f 45%, #7a4218 100%);
+}
+.city-glow{ position:absolute; inset:0; mix-blend-mode:screen; pointer-events:none; }
+.city-clouds{ position:absolute; inset:0; opacity:.55; mix-blend-mode:screen; pointer-events:none; }
+.city-birds{ position:absolute; inset:0; pointer-events:none; }
+
+.light-rays{
+  position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:.6;
+  background:repeating-linear-gradient(70deg,
+    rgba(143,184,221,0) 0px, rgba(143,184,221,.06) 2px,
+    rgba(143,184,221,0) 60px, rgba(143,184,221,0) 140px);
+  animation:raysDrift 26s linear infinite;
+}
+@keyframes raysDrift{ from{ background-position:0 0; } to{ background-position:420px 0; } }
+
+.golden-haze{
+  position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(ellipse 75% 55% at 50% 72%, rgba(232,151,59,.16), transparent 70%);
+  animation:hazePulse 9s ease-in-out infinite;
+}
+@keyframes hazePulse{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
+
+@media (prefers-reduced-motion: reduce){
+  .light-rays{ animation:none; }
+  .golden-haze{ animation:none; }
+}
+body.reduced-motion .light-rays{ animation:none; }
+body.reduced-motion .golden-haze{ animation:none; }
+
+/* sits just below the city title baked into the background photo itself
+   (both munichline.jpg and bangalore_line.jpg carry their own name/country
+   lockup near the top) — Munich's title sits centered, so the caption
+   stays centered beneath it; Bangalore's caption sits to the left instead */
+.city-content{
+  position:absolute; left:0; right:0; z-index:5; width:100%;
+}
+#scene-munich .city-content{ top:27%; text-align:center; }
+#scene-bangalore .city-content{
+  top:29%; text-align:left; max-width:520px; margin:0; left:8%; right:auto;
+}
+
+/* Set city name — hidden wherever the photo's own baked-in lockup fits, and
+   switched on by the portrait block at the end of this file, where it doesn't.
+   Colours are picked to land where each photo's dark charcoal title lands
+   *after* the scene tint, so the two treatments read the same. */
+.city-title{ display:none; margin:0; }
+.city-title-name{
+  display:block; font-family:var(--font-body); font-weight:700;
+  font-size:min(12.5vw, 58px); line-height:1.02; letter-spacing:.01em;
+  text-transform:uppercase; white-space:nowrap;
+}
+.city-title-country{
+  display:flex; align-items:center; gap:.7em;
+  font-family:var(--font-body); font-weight:600;
+  font-size:min(5.4vw, 25px); line-height:1.1; letter-spacing:.12em;
+  text-transform:uppercase; white-space:nowrap; margin-top:.18em;
+}
+.city-title::before,
+.city-title-country::before,
+.city-title-country::after{ content:''; height:2px; background:currentColor; opacity:.7; }
+.city-title::before{ display:block; margin-bottom:.14em; }
+.city-title-country::before,
+.city-title-country::after{ flex:1 1 auto; }
+#scene-munich .city-title{ color:rgba(38,43,50,.92); }
+#scene-bangalore .city-title{ color:rgba(52,42,36,.92); }
+
+/* ============================================================
+   SCENE 5 — CONNECTION
+   ============================================================ */
+#scene-connection .pin-wrap{ background:var(--bg); }
+.connection-caption{
+  position:absolute; left:0; right:0; bottom:22%; z-index:6;
+  text-align:center; opacity:0; max-width:min(80vw,560px); margin:0 auto;
+}
+.connection-caption-date{
+  font-family:var(--font-mono); font-size:var(--caps-size); font-weight:500; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--accent); margin-bottom:12px; font-variant-numeric:tabular-nums; min-height:1em;
+  text-shadow:0 1px 8px rgba(0,0,0,.65);
+}
+.connection-caption-text{
+  font-family:var(--font-display); font-weight:400; font-style:italic;
+  font-size:clamp(20px,3vw,32px); line-height:1.35; color:var(--ivory); margin:0;
+}
+.connection-countdown{
+  position:absolute; left:0; right:0; bottom:20%; z-index:6;
+  opacity:0; pointer-events:none;
+}
+.connection-countdown-heading{
+  font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em; text-transform:uppercase;
+  color:var(--accent); margin:0 0 18px; text-shadow:0 1px 8px rgba(0,0,0,.65);
+}
+
+/* ============================================================
+   SCENES 9-11 MERGED — SAVE THE DATE / COUNTDOWN / DETAILS
+   ============================================================ */
+.reveal-flow{
+  min-height:auto; padding:9vh var(--scene-pad) 14vh;
+  background:var(--bg);
+  display:block;
+}
+.reveal-flow-inner{ display:flex; flex-direction:column; align-items:center; gap:13vh; max-width:1100px; margin:0 auto; }
+
+.countdown-block{ text-align:center; }
+.countdown-grid{ display:flex; gap:clamp(10px,2.4vw,28px); flex-wrap:wrap; justify-content:center; margin-top:1.4rem; }
+.flip-unit{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+.flip-card{
+  position:relative; width:clamp(64px,9vw,104px); height:clamp(78px,11vw,128px);
+  perspective:300px;
+}
+.flip-face{
+  position:absolute; inset:0; border-radius:8px;
+  background:linear-gradient(160deg, #141210, #0a0908);
+  border:1px solid rgba(var(--gold-rgb),.25);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:500;
+  font-size:clamp(30px,5vw,54px); color:var(--ivory);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 20px 40px rgba(0,0,0,.5);
+}
+.flip-face::after{ content:''; position:absolute; left:0; right:0; top:50%; height:1px; background:rgba(0,0,0,.55); }
+.flip-unit-label{ font-size:var(--caps-size); letter-spacing:.32em; text-transform:uppercase; color:var(--accent); }
+.countdown-married{ display:none; font-family:var(--font-display); font-style:italic; font-size:clamp(28px,4vw,44px); color:var(--gold); }
+
+/* the invitation is a spoken line, like the one closing the ending, so it
+   takes the same treatment: display italic on a narrow, balanced measure.
+   As light sans across 52ch it read as a caption and broke after "Lekhana",
+   splitting the couple from the verb. The hairline separates the heading
+   above from the sentence itself. */
+.details-intro{
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(16px,2vw,23px); line-height:1.65;
+  color:rgba(248,246,242,.86); max-width:30ch; margin:3.4vh auto 0;
+  text-wrap:balance;
+}
+.details-intro::before{
+  content:''; display:block; width:56px; height:1px; margin:0 auto 3vh;
+  background:linear-gradient(90deg, transparent, rgba(var(--gold-rgb),.8), transparent);
+}
+/* a step quieter than the invitation above it — gold and smaller, so it
+   labels the poster underneath rather than competing with the heading */
+.poster-caption{
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(15px,1.7vw,20px); color:var(--accent); margin:7vh 0 0;
+}
+.connection-countdown-date{
+  font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em;
+  text-transform:uppercase; color:var(--accent); margin:1.6rem 0 0;
+  text-shadow:0 1px 8px rgba(0,0,0,.65);
+}
+/* the one section heading that names the day itself — gold rather than ivory,
+   so it reads as the invitation's own title and not another scene caption */
+.details-block > .scene-caption{ color:var(--gold); }
+.details-block{ text-align:center; width:100%; }
+.details-block .eyebrow, .details-block h2{ text-align:center; }
+.details-block h2{ margin:0 auto 4vh; }
+.details-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1px; max-width:1100px; margin:2.2rem auto 0; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.08); }
+.details-card{ background:#050505; padding:44px 34px; opacity:0; transform:translateY(24px); text-align:left; }
+.details-card h3{ font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em; text-transform:uppercase; color:var(--gold); margin-bottom:16px; }
+.details-card p{ font-family:var(--font-display); font-style:italic; font-size:19px; line-height:1.5; color:var(--ivory); margin:0 0 6px; }
+.details-card .sub{ font-family:var(--font-body); font-style:normal; font-size:13px; color:rgba(248,246,242,.6); }
+.details-card .placeholder{ color:rgba(248,246,242,.4); font-style:italic; }
+.details-map{ margin-top:50px; text-align:center; }
+/* the one place a visitor legitimately wants to pinch, so it opts back out of
+   the body's pan-y */
+.map-frame{ max-width:900px; margin:0 auto; border:1px solid rgba(255,255,255,.1); aspect-ratio:16/6; position:relative; overflow:hidden; touch-action:auto; }
+.map-frame iframe{ width:100%; height:100%; border:0; filter:grayscale(1) invert(.92) contrast(.9); }
+.map-placeholder{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; background:#0a0908; color:rgba(248,246,242,.4); font-size:13px; letter-spacing:.1em; }
+.map-link{
+  position:absolute; right:16px; bottom:16px; z-index:2;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--bg); background:var(--gold); padding:10px 18px; border-radius:999px;
+  text-decoration:none; box-shadow:0 8px 24px rgba(0,0,0,.4);
+  transition:transform .3s var(--ease-out), background .3s;
+}
+@media (hover:hover){ .map-link:hover{ background:var(--accent); transform:translateY(-2px); } }
+
+/* ============================================================
+   SCENE 12 — POSTER REVEAL
+   ============================================================ */
+/* the poster sits in the flow of the details block, directly under the
+   heading and above the schedule — it reveals with the same .will-reveal
+   pass as everything else around it rather than owning its own scene */
+.poster-frame{
+  position:relative; width:min(64vw, 460px); aspect-ratio:1240/1748;
+  margin:3vh auto 0; background:#e4e6da;
+}
+.poster-frame img{ width:100%; height:100%; object-fit:contain; border-radius:2px; }
+.poster-border{ position:absolute; inset:-14px; border:1px solid var(--gold); pointer-events:none; opacity:.7; }
+.poster-border::before, .poster-border::after{
+  content:''; position:absolute; width:22px; height:22px; border:1px solid var(--gold);
+}
+.poster-border::before{ top:-1px; left:-1px; border-right:none; border-bottom:none; }
+.poster-border::after{ bottom:-1px; right:-1px; border-left:none; border-top:none; }
+.poster-fallback{
+  width:100%; height:100%; background:linear-gradient(165deg, #0d0b08, #050505);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+  border:1px solid rgba(var(--gold-rgb),.3); padding:8%;
+}
+.poster-fallback .pf-names{ font-family:var(--font-display); font-style:italic; font-size:clamp(24px,4vw,32px); text-align:center; color:var(--ivory); }
+.poster-fallback .pf-amp{ color:var(--gold); display:block; margin:.2em 0; }
+.poster-fallback .pf-date{ font-size:var(--caps-size); letter-spacing:.3em; text-transform:uppercase; color:var(--gold); }
+.poster-fallback .pf-cities{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:rgba(248,246,242,.4); }
+
+/* ============================================================
+   ENDING
+   ============================================================ */
+#scene-ending{ min-height:120vh; min-height:120svh; display:flex; align-items:center; justify-content:center; background:var(--bg); text-align:center; padding:14vh var(--scene-pad); }
+.ending-inner{ display:flex; flex-direction:column; align-items:center; gap:5vh; position:relative; z-index:2; }
+/* tight enough that the lines read as one thought rather than separate
+   statements. The <p>s keep the browser's default 20px block margins, which
+   don't collapse inside a flex column — so the real gap was gap + 40px and
+   changing `gap` alone barely moved it. Zeroed here; `gap` now sets it. */
+.ending-lines{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+.ending-line{
+  font-family:var(--font-display); font-style:italic; font-size:clamp(20px,3vw,32px);
+  line-height:1.25; margin:0; opacity:0;
+}
+.ending-distance{
+  font-family:var(--font-mono); font-size:clamp(16px,2vw,22px); letter-spacing:.1em;
+  color:rgba(248,246,242,.6); opacity:0; transform:translateY(14px); margin:3vh 0 0;
+  font-variant-numeric:tabular-nums;
+}
+/* the tail of the same sentence, so it inherits the same size and flows
+   straight on — only the colour and weight separate the two halves */
+.ending-distance-zero{ color:var(--gold); font-weight:500; letter-spacing:.14em; }
+/* the invitation is the one spoken line in the ending, so it's set in the
+   display italic rather than the small sans it used to use — at 46ch of
+   body text it read as a caption and broke mid-phrase, orphaning "with
+   you." on its own line. A narrower measure plus balanced wrapping keeps
+   it to even lines, and a hairline flourish separates it from the poem
+   above so it lands as its own moment. */
+.ending-invite{
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(20px,3vw,32px);
+  color:rgba(248,246,242,.88); max-width:34ch; margin:4.5vh auto 0;
+  text-wrap:balance;
+  opacity:0; transform:translateY(14px);
+}
+.ending-invite::before{
+  content:''; display:block; width:56px; height:1px; margin:0 auto 3.2vh;
+  background:linear-gradient(90deg, transparent, rgba(var(--gold-rgb),.8), transparent);
+}
+.ending-names{ font-family:var(--font-display); font-size:clamp(32px,5vw,56px); margin-top:2vh; opacity:0; transform:translateY(16px); }
+.ending-names .amp{ color:var(--gold); }
+.ending-date{ font-size:var(--caps-size); letter-spacing:.32em; text-transform:uppercase; color:var(--accent); opacity:0; transform:translateY(10px); }
+.ics-link{
+  margin-top:3vh; display:inline-flex; align-items:center; gap:10px;
+  font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold);
+  text-decoration:none; border-bottom:1px solid rgba(var(--gold-rgb),.4); padding-bottom:6px;
+  opacity:0; transform:translateY(10px);
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce){
+  .scene-tall{ height:auto; min-height:100vh; }
+  .pin-wrap{ position:relative; height:auto; min-height:100vh; padding:14vh 0; }
+  .scroll-hint-particle{ animation:none; opacity:.85; }
+  .scroll-hint-label{ animation:none; opacity:.85; }
+}
+body.reduced-motion .scene-tall{ height:auto; min-height:100vh; }
+body.reduced-motion .pin-wrap{ height:auto; min-height:100vh; padding:14vh 0; }
+body.reduced-motion .scroll-hint-label{ animation:none; }
+
+/* generic reveal helpers (used by JS-driven GSAP + as reduced-motion fallback via CSS classes) */
+.will-reveal{ opacity:0; transform:translateY(24px); }
+.is-revealed{ opacity:1 !important; transform:translateY(0) !important; transition:opacity 1s var(--ease-out), transform 1s var(--ease-out); }
+
+/* ============================================================
+   RESPONSIVE
+   Targets, smallest first: Flip cover screen (~260px), Fold folded
+   (~344px), iPhone SE (375), iPhone 15/16 (393), Pro Max / S-Ultra
+   (430-480), Fold unfolded (~673), iPad mini (744), iPad Pro (1024).
+   Plus a landscape rule, because a phone on its side gives roughly
+   400px of height and every full-height scene has to survive it.
+   ============================================================ */
+
+/* ---------- tablets / Fold unfolded ---------- */
+@media (max-width:1024px){
+  .details-grid{ grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); }
+  .map-frame{ aspect-ratio:16/9; }
+  .poster-frame{ width:min(72vw, 420px); }
+}
+
+/* ---------- phones (portrait) ---------- */
+@media (max-width:760px){
+  /* the old minmax(240px) floor was wider than the content box on any
+     phone, which forced the grid to overflow the viewport horizontally */
+  .details-grid{ grid-template-columns:1fr; }
+  .details-card{ padding:30px 22px; }
+  .details-card p{ font-size:17px; }
+  .map-frame{ aspect-ratio:4/3; }
+  .map-link{ right:12px; bottom:12px; padding:12px 18px; }
+  .details-map{ margin-top:34px; }
+
+  .reveal-flow{ padding:7vh var(--scene-pad) 11vh; }
+  .reveal-flow-inner{ gap:9vh; }
+
+  .poster-frame{ width:min(82vw, 380px); }
+  .poster-border{ inset:-9px; }
+
+  .earth-caption{ font-size:10px; letter-spacing:.2em; }
+  .earth-caption b{ font-size:16px; }
+  .earth-caption-date, .earth-caption-weather{ font-size:9px; }
+  .earth-distance{ bottom:calc(42px + env(safe-area-inset-bottom)); }
+
+  .connection-caption{ bottom:20%; max-width:88vw; }
+  .connection-countdown{ bottom:17%; }
+  .countdown-grid{ gap:10px; }
+
+  #scene-munich .city-content{ top:24%; }
+  #scene-bangalore .city-content{ top:26%; left:0; max-width:none; }
+  #scene-bangalore .city-content .scene-caption,
+  #scene-bangalore .city-content .scene-subline{ text-align:left; }
+  .scene-subline{ max-width:38ch; }
+
+  .ending-inner{ gap:4vh; }
+  .ending-lines{ gap:10px; }
+
+  .scroll-hint{ bottom:calc(38px + env(safe-area-inset-bottom)); height:72px; }
+  @keyframes scrollParticleFall{
+    0%{ transform:translateY(0); opacity:0; }
+    12%{ opacity:1; }
+    85%{ opacity:1; }
+    100%{ transform:translateY(66px); opacity:0; }
+  }
+
+  .audio-toggle{
+    bottom:calc(18px + env(safe-area-inset-bottom));
+    right:calc(18px + env(safe-area-inset-right));
+  }
+}
+
+/* ---------- narrow phones / Fold folded ---------- */
+@media (max-width:400px){
+  .flip-card{ width:clamp(56px,17vw,74px); height:clamp(68px,21vw,92px); }
+  .flip-face{ font-size:clamp(26px,9vw,38px); }
+  .flip-unit{ gap:9px; }
+  .countdown-grid{ gap:8px; }
+  .details-card{ padding:26px 18px; }
+  .connection-caption{ bottom:18%; }
+  .connection-caption-text{ font-size:clamp(17px,5.2vw,22px); }
+  .connection-caption-date{ margin-bottom:9px; }
+  .map-frame{ aspect-ratio:1/1; }
+  .ics-link{ letter-spacing:.14em; }
+}
+
+/* ---------- Flip cover screen and anything near it ---------- */
+@media (max-width:320px){
+  :root{ --scene-pad:16px; --caps-size:11px; }
+  /* four flip cards can't sit on one row this narrow — two per row reads
+     better than four cramped ones wrapping unevenly */
+  .countdown-grid{ display:grid; grid-template-columns:repeat(2,auto); justify-content:center; gap:10px; }
+  .flip-card{ width:64px; height:78px; }
+  .flip-face{ font-size:30px; }
+  .details-card{ padding:22px 16px; }
+  .ending-line{ font-size:18px; }
+  .ending-names{ font-size:26px; }
+  .ending-distance{ font-size:14px; letter-spacing:.06em; }
+  .poster-frame{ width:88vw; }
+}
+
+/* ============================================================
+   PORTRAIT ONLY (phones)
+   A page can't actually lock the device's orientation — screen.orientation.lock()
+   is refused outside fullscreen and doesn't exist on iOS at all — so the site
+   holds the line itself: a phone turned sideways gets this instead of the story.
+   Scoped by height (a tablet in landscape is 768px+ and keeps working normally)
+   and by pointer, so a short desktop window is never caught by it.
+   ============================================================ */
+.rotate-notice{ display:none; }
+@media (orientation:landscape) and (max-height:560px) and (pointer:coarse) and (max-width:1024px){
+  .rotate-notice{
+    display:flex; position:fixed; inset:0; z-index:9999;
+    align-items:center; justify-content:center;
+    background:var(--bg); touch-action:none; overscroll-behavior:none;
+    padding:calc(20px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right))
+            calc(20px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+  }
+  .rotate-notice-inner{ text-align:center; max-width:46ch; }
+  .rotate-notice-icon{
+    width:44px; height:44px; margin:0 auto 18px; display:block;
+    fill:none; stroke:var(--gold); stroke-width:2;
+    stroke-linecap:round; stroke-linejoin:round;
+  }
+  .rotate-notice-title{
+    font-family:var(--font-display); font-style:italic; font-weight:400;
+    font-size:clamp(19px,4.4vh,26px); line-height:1.3; color:var(--ivory); margin:0;
+  }
+  .rotate-notice-sub{
+    font-family:var(--font-body); font-size:var(--caps-size);
+    letter-spacing:.22em; text-transform:uppercase; color:var(--accent);
+    margin:14px 0 0;
+  }
+}
+
+/* ---------- landscape phones (and the Flip cover in landscape) ----------
+   ~400px of height: full-height scenes still have to hold a caption, so
+   the vertical rhythm tightens rather than overflowing. */
+@media (max-height:560px) and (orientation:landscape){
+  .scene-caption{ font-size:clamp(19px,3.4vh,28px); }
+  .scene-subline{ font-size:13px; margin-top:9px; }
+  .connection-caption{ bottom:13%; }
+  .connection-caption-text{ font-size:clamp(16px,3.4vh,23px); }
+  .connection-caption-date{ margin-bottom:7px; }
+  .connection-countdown{ bottom:11%; }
+  .flip-card{ width:clamp(50px,9vh,72px); height:clamp(60px,11vh,88px); }
+  .flip-face{ font-size:clamp(24px,6vh,36px); }
+  .opening-greeting-text{ font-size:clamp(24px,7vh,38px); }
+  .scroll-hint{ height:52px; bottom:calc(22px + env(safe-area-inset-bottom)); }
+  /* landscape crops the photos top and bottom instead of left and right, so the
+     baked-in lockup stays whole and this stays the desktop treatment — but at
+     ~400px of height Munich's caption was landing 15px inside the bottom of
+     "GERMANY". 26% clears it with the same margin the desktop rule leaves. */
+  #scene-munich .city-content{ top:26%; }
+  #scene-bangalore .city-content{ top:22%; }
+  .earth-distance{ bottom:calc(24px + env(safe-area-inset-bottom)); }
+  .earth-distance .km{ font-size:clamp(22px,5vh,32px); }
+  .ending-inner{ gap:2.6vh; }
+  .ending-lines{ gap:7px; }
+  .reveal-flow-inner{ gap:7vh; }
+}
+
+/* ---------- touch devices: real tap targets ----------
+   both conditions, because tablets and hybrids don't report these
+   consistently and a 22px-tall link is not tappable on any of them */
+@media (hover:none), (pointer:coarse){
+  .map-link{ min-height:44px; display:inline-flex; align-items:center; }
+  .ics-link{ min-height:44px; align-items:center; }
+  .audio-toggle{ width:48px; height:48px; }
+}
+
+/* ---------- portrait: the city photos' baked-in titles ----------
+   Both skyline photos are ~1.9:1 and carry their own name lockup, which spans
+   about a third of the image width. `cover` on a portrait frame scales the photo
+   by height, so only the middle ~24% of its width is ever on screen and the
+   lockup is sliced through the middle ("BANGALOR"). Below 4:5 we therefore wash
+   the lockup out and set the name as real text, which fits any width.
+
+   The wash works because each photo's own sky is flat white behind the title
+   (sampled: #f3 at the very top through #fff from 19% down), so a gradient in
+   those exact values is invisible against it — it just erases the lettering. The
+   stops are percentages of the element, which map 1:1 onto the image here:
+   below 1.82:1, `cover` scales by height, so image height == element height.
+   Cleared by 29% (Bangalore's tallest spire) and 30% (Munich's), and both sit
+   under the same scene tint as before, so nothing else about the mood changes. */
+@media (max-aspect-ratio: 4/5){
+  #scene-munich .city-sky{
+    background:
+      linear-gradient(180deg, rgba(11,20,32,.72) 0%, rgba(20,34,54,.55) 45%, rgba(38,64,92,.4) 100%),
+      linear-gradient(180deg, #f3f3f3 0%, #f4f4f4 2%, #f7f7f7 5%, #fbfbfb 10%,
+                              #fff 19%, #fff 27%, rgba(255,255,255,0) 30.5%),
+      url('munichline.jpg') center/cover no-repeat,
+      linear-gradient(180deg,#0B1420 0%, #142236 45%, #26405c 100%);
+  }
+  #scene-bangalore .city-sky{
+    background:
+      linear-gradient(180deg, rgba(26,15,8,.72) 0%, rgba(58,29,15,.55) 45%, rgba(122,66,24,.4) 100%),
+      linear-gradient(180deg, #f3f3f3 0%, #f4f4f4 2%, #f7f7f7 5%, #fbfbfb 10%,
+                              #fff 19%, #fff 25.5%, rgba(255,255,255,0) 29.3%),
+      url('bangalore_line.jpg') center/cover no-repeat,
+      linear-gradient(180deg,#1a0f08 0%, #3a1d0f 45%, #7a4218 100%);
+  }
+
+  .city-title{ display:block; width:max-content; max-width:100%; margin:0 auto 26px; }
+
+  /* one centred lockup per city now that the name is set rather than photographed
+     — Bangalore's off-centre desktop treatment leaves the subline auto-centred
+     under a flush-left caption on a narrow screen, which reads as a stray indent */
+  #scene-munich .city-content,
+  #scene-bangalore .city-content{
+    top:10%; left:0; right:auto; width:100%; max-width:none;
+    padding:0 var(--scene-pad); text-align:center;
+  }
+  #scene-bangalore .city-content .scene-caption,
+  #scene-bangalore .city-content .scene-subline{ text-align:center; }
+}
