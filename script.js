@@ -2270,6 +2270,11 @@ function initMusicGate(){
       gsap.set(btn, { clearProps:'transform,opacity,boxShadow' });
     }
     if(cue) cue.classList.add('is-primed');        // the light is the cue now
+    /* the gate is now just an inert resting scene like any other — the
+       scroll-snap system (see initScrollSnap) was holding off settling
+       anywhere near it while it still owned the visitor's answer; that's
+       done now, so let scrolling back up here settle the same as anywhere else */
+    window.dispatchEvent(new Event('gate:resolved'));
   }
 
   /* ---- DISSOLVE -> DOCKING -> READY -----------------------------------
@@ -2678,14 +2683,22 @@ function initScrollSnap(){
   if(REDUCED_MOTION) return;
   const scenes = $$('main > .scene');
   if(scenes.length < 2) return;
-  const handsOff = new Set(['scene-gate']);   // no auto-settle anywhere inside
+  const handsOff = new Set(['scene-gate']);   // no auto-settle anywhere inside, until answered
   /* top is a valid target (arriving from before still snaps cleanly onto the
      edge); the interior is not. Living Earth / Connection: their whole
      scroll range IS the scrub being watched. Countdown & Details ("The
      celebration"): a long, ordinary read of wedding info — pausing partway
      through a paragraph shouldn't yank the page back up to its heading. */
   const arrivalOnly = new Set(['scene-earth','scene-connection','scene-savedate']);
-  const targets = scenes.filter(el => !handsOff.has(el.id));
+  let targets = scenes.filter(el => !handsOff.has(el.id));
+  /* the gate hands off its own scroll the moment it's answered (tap or
+     scroll-past) — from then on it's an inert resting scene like any other,
+     so scrolling back up to it should settle cleanly instead of always
+     overshooting to whatever comes after it */
+  window.addEventListener('gate:resolved', ()=>{
+    handsOff.delete('scene-gate');
+    targets = scenes.filter(el => !handsOff.has(el.id));
+  }, { once:true });
 
   const sceneTop = el => el.getBoundingClientRect().top + window.scrollY;
   const sceneBottom = el => sceneTop(el) + el.offsetHeight;
