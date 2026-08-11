@@ -28,7 +28,7 @@
   /* shared size for every small gold/ivory uppercase eyebrow-style label
      (scene eyebrows, dates, countdown/detail labels) so they read as one
      consistent system rather than each picking its own size */
-  --caps-size: clamp(13px, 2.6vw, 18px);
+  --caps-size: clamp(.8125rem, 2.6vw, 1.125rem);
 }
 
 *{box-sizing:border-box;}
@@ -86,7 +86,7 @@ button{font-family:var(--font-body); cursor:pointer;}
   top:calc(14px + env(safe-area-inset-top));
   left:calc(14px + env(safe-area-inset-left));
   background:var(--bg); color:var(--gold);
-  padding:10px 18px; font-size:13px; letter-spacing:.08em; text-transform:uppercase;
+  padding:10px 18px; font-size:.8125rem; letter-spacing:.08em; text-transform:uppercase;
   border:1px solid rgba(var(--gold-rgb),.4); border-radius:2px;
   transform:translateY(-140%); transition:transform .3s var(--ease-out);
   text-decoration:none;
@@ -184,11 +184,11 @@ button{font-family:var(--font-body); cursor:pointer;}
   transition:opacity .5s var(--ease-out), transform .5s var(--ease-out), filter .5s var(--ease-out);
 }
 .gate-plaque-state b{
-  font-family:var(--font-body); font-weight:600; font-size:clamp(12px,1.3vw,14px);
+  font-family:var(--font-body); font-weight:600; font-size:clamp(.75rem,1.3vw,.875rem);
   letter-spacing:.18em; text-transform:uppercase; color:var(--accent); white-space:nowrap;
 }
 .gate-plaque-state span{
-  font-family:var(--font-body); font-weight:400; font-size:clamp(10px,1vw,11px);
+  font-family:var(--font-body); font-weight:400; font-size:clamp(.625rem,1vw,.6875rem);
   letter-spacing:.14em; text-transform:uppercase; color:rgba(248,246,242,.5); white-space:nowrap;
 }
 .gate-sat[data-stage="tap"]   .gate-plaque-sound,
@@ -315,11 +315,11 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 }
 .scene-caption{
   font-family:var(--font-display); font-weight:400; font-style:italic;
-  font-size:clamp(22px, 3.4vw, 40px); line-height:1.35; color:var(--ivory);
+  font-size:clamp(1.375rem, 3.4vw, 2.5rem); line-height:1.35; color:var(--ivory);
   margin:0; opacity:0; transform:translateY(22px);
 }
 .scene-subline{
-  font-family:var(--font-body); font-weight:400; font-size:clamp(13px,1.1vw,15px);
+  font-family:var(--font-body); font-weight:400; font-size:clamp(.875rem,1.3vw,1rem);
   line-height:1.6; color:rgba(248,246,242,.62); max-width:34ch;
   margin:14px auto 0; opacity:0; transform:translateY(16px);
 }
@@ -355,7 +355,7 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
   margin-bottom:14px; white-space:nowrap;
   font-family:var(--font-body); font-weight:500;
-  font-size:clamp(13px,1.1vw,15px); letter-spacing:.28em; text-transform:uppercase;
+  font-size:clamp(.8125rem,1.1vw,.9375rem); letter-spacing:.28em; text-transform:uppercase;
   color:rgba(248,246,242,.72);
   animation:scrollLabelPulse 2.8s ease-in-out infinite;
 }
@@ -415,14 +415,14 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 .opening-greeting{ text-align:center; opacity:0; }
 .opening-greeting-text{
   font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(28px, 4.6vw, 54px); color:rgba(248,246,242,.95); margin:0 0 .5em;
+  font-size:clamp(1.75rem, 4.6vw, 3.375rem); color:rgba(248,246,242,.95); margin:0 0 .5em;
 }
 /* the small light sans read as interface copy sitting under a display line.
    Set as a title-card subtitle instead — the same gold small-caps the rest of
    the site uses for its eyebrows, under a short rule that ties it to the
    greeting rather than leaving it floating. */
 .opening-greeting-sub{
-  font-family:var(--font-body); font-weight:500; font-size:clamp(11px,1.05vw,13px);
+  font-family:var(--font-body); font-weight:500; font-size:clamp(.6875rem,1.05vw,.8125rem);
   letter-spacing:.24em; text-transform:uppercase; line-height:1.9;
   color:var(--accent); margin:0 auto; max-width:34ch; text-wrap:balance;
 }
@@ -437,16 +437,19 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 #scene-earth .pin-wrap{ background:var(--bg); }
 .earth-caption{
   position:absolute; z-index:6; font-family:var(--font-body);
-  font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--ivory);
+  font-size:.6875rem; letter-spacing:.28em; text-transform:uppercase; color:var(--ivory);
   display:flex; flex-direction:column; gap:4px; opacity:0; transition:opacity .8s var(--ease-out);
   /* shrink-to-fit against the positioned edge means a caption pinned near the
      right of a narrow screen wraps mid-word ("Bangalor / e") instead of moving;
      max-content keeps it one clean block so the pin logic can nudge it inward */
   width:max-content; text-shadow:0 1px 10px rgba(0,0,0,.75);
 }
-.earth-caption b{ font-family:var(--font-display); font-style:italic; font-size:20px; letter-spacing:0; text-transform:none; color:var(--gold); }
-.earth-caption-date{ font-size:10px; letter-spacing:.2em; color:rgba(248,246,242,.5); }
-.earth-caption-weather{ font-size:10px; letter-spacing:.14em; text-transform:none; font-style:italic; font-family:var(--font-display); color:var(--accent); }
+/* explicit weight: <b> defaults to 700, which Fraunces never loads — left
+   alone, the browser fakes it by stretching the 500 outline, and a synthetic
+   bold on a serif reads as smudged rather than heavier */
+.earth-caption b{ font-family:var(--font-display); font-weight:500; font-style:italic; font-size:1.25rem; letter-spacing:0; text-transform:none; color:var(--gold); }
+.earth-caption-date{ font-size:.625rem; letter-spacing:.2em; color:rgba(248,246,242,.5); }
+.earth-caption-weather{ font-size:.625rem; letter-spacing:.14em; text-transform:none; font-style:italic; font-family:var(--font-display); color:var(--accent); }
 .earth-caption.is-visible{opacity:1;}
 #earth-label-munich{ top:24%; left:16%; text-align:left; }
 #earth-label-bangalore{ bottom:22%; right:14%; text-align:right; }
@@ -458,7 +461,7 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   width:max-content; max-width:92vw;
 }
 .earth-distance.is-visible{opacity:1;}
-.earth-distance .km{ font-size:clamp(28px,4vw,44px); color:var(--ivory); }
+.earth-distance .km{ font-size:clamp(1.75rem,4vw,2.75rem); color:var(--ivory); }
 .earth-distance .lbl{ font-size:var(--caps-size); letter-spacing:.3em; text-transform:uppercase; color:var(--accent); margin-top:4px; }
 
 /* ============================================================
@@ -538,13 +541,13 @@ body.reduced-motion .golden-haze{ animation:none; }
 .city-title{ display:none; margin:0; }
 .city-title-name{
   display:block; font-family:var(--font-body); font-weight:700;
-  font-size:min(12.5vw, 58px); line-height:1.02; letter-spacing:.01em;
+  font-size:min(12.5vw, 3.625rem); line-height:1.02; letter-spacing:.01em;
   text-transform:uppercase; white-space:nowrap;
 }
 .city-title-country{
   display:flex; align-items:center; gap:.7em;
   font-family:var(--font-body); font-weight:600;
-  font-size:min(5.4vw, 25px); line-height:1.1; letter-spacing:.12em;
+  font-size:min(5.4vw, 1.5625rem); line-height:1.1; letter-spacing:.12em;
   text-transform:uppercase; white-space:nowrap; margin-top:.18em;
 }
 .city-title::before,
@@ -571,7 +574,7 @@ body.reduced-motion .golden-haze{ animation:none; }
 }
 .connection-caption-text{
   font-family:var(--font-display); font-weight:400; font-style:italic;
-  font-size:clamp(20px,3vw,32px); line-height:1.35; color:var(--ivory); margin:0;
+  font-size:clamp(1.25rem,3vw,2rem); line-height:1.35; color:var(--ivory); margin:0;
 }
 .connection-countdown{
   position:absolute; left:0; right:0; bottom:20%; z-index:6;
@@ -605,12 +608,12 @@ body.reduced-motion .golden-haze{ animation:none; }
   border:1px solid rgba(var(--gold-rgb),.25);
   display:flex; align-items:center; justify-content:center;
   font-family:var(--font-display); font-weight:500;
-  font-size:clamp(30px,5vw,54px); color:var(--ivory);
+  font-size:clamp(1.875rem,5vw,3.375rem); color:var(--ivory);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 20px 40px rgba(0,0,0,.5);
 }
 .flip-face::after{ content:''; position:absolute; left:0; right:0; top:50%; height:1px; background:rgba(0,0,0,.55); }
 .flip-unit-label{ font-size:var(--caps-size); letter-spacing:.32em; text-transform:uppercase; color:var(--accent); }
-.countdown-married{ display:none; font-family:var(--font-display); font-style:italic; font-size:clamp(28px,4vw,44px); color:var(--gold); }
+.countdown-married{ display:none; font-family:var(--font-display); font-style:italic; font-size:clamp(1.75rem,4vw,2.75rem); color:var(--gold); }
 
 /* the invitation is a spoken line, like the one closing the ending, so it
    takes the same treatment: display italic on a narrow, balanced measure.
@@ -619,7 +622,7 @@ body.reduced-motion .golden-haze{ animation:none; }
    above from the sentence itself. */
 .details-intro{
   font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(16px,2vw,23px); line-height:1.65;
+  font-size:clamp(1rem,2vw,1.4375rem); line-height:1.65;
   color:rgba(248,246,242,.86); max-width:30ch; margin:3.4vh auto 0;
   text-wrap:balance;
 }
@@ -631,7 +634,7 @@ body.reduced-motion .golden-haze{ animation:none; }
    labels the poster underneath rather than competing with the heading */
 .poster-caption{
   font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(15px,1.7vw,20px); color:var(--accent); margin:7vh 0 0;
+  font-size:clamp(.9375rem,1.7vw,1.25rem); color:var(--accent); margin:7vh 0 0;
 }
 .connection-countdown-date{
   font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em;
@@ -647,18 +650,18 @@ body.reduced-motion .golden-haze{ animation:none; }
 .details-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1px; max-width:1100px; margin:2.2rem auto 0; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.08); }
 .details-card{ background:#050505; padding:44px 34px; opacity:0; transform:translateY(24px); text-align:left; }
 .details-card h3{ font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em; text-transform:uppercase; color:var(--gold); margin-bottom:16px; }
-.details-card p{ font-family:var(--font-display); font-style:italic; font-size:19px; line-height:1.5; color:var(--ivory); margin:0 0 6px; }
-.details-card .sub{ font-family:var(--font-body); font-style:normal; font-size:13px; color:rgba(248,246,242,.6); }
-.details-card .placeholder{ color:rgba(248,246,242,.4); font-style:italic; }
+.details-card p{ font-family:var(--font-display); font-style:italic; font-size:1.1875rem; line-height:1.5; color:var(--ivory); margin:0 0 6px; }
+.details-card .sub{ font-family:var(--font-body); font-style:normal; font-size:.8125rem; color:rgba(248,246,242,.6); }
+.details-card .placeholder{ color:rgba(248,246,242,.5); font-style:italic; }
 .details-map{ margin-top:50px; text-align:center; }
 /* the one place a visitor legitimately wants to pinch, so it opts back out of
    the body's pan-y */
 .map-frame{ max-width:900px; margin:0 auto; border:1px solid rgba(255,255,255,.1); aspect-ratio:16/6; position:relative; overflow:hidden; touch-action:auto; }
 .map-frame iframe{ width:100%; height:100%; border:0; filter:grayscale(1) invert(.92) contrast(.9); }
-.map-placeholder{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; background:#0a0908; color:rgba(248,246,242,.4); font-size:13px; letter-spacing:.1em; }
+.map-placeholder{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; background:#0a0908; color:rgba(248,246,242,.5); font-size:.8125rem; letter-spacing:.1em; }
 .map-link{
   position:absolute; right:16px; bottom:16px; z-index:2;
-  font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  font-family:var(--font-mono); font-size:.75rem; letter-spacing:.14em; text-transform:uppercase;
   color:var(--bg); background:var(--gold); padding:10px 18px; border-radius:999px;
   text-decoration:none; box-shadow:0 8px 24px rgba(0,0,0,.4);
   transition:transform .3s var(--ease-out), background .3s;
@@ -687,10 +690,10 @@ body.reduced-motion .golden-haze{ animation:none; }
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
   border:1px solid rgba(var(--gold-rgb),.3); padding:8%;
 }
-.poster-fallback .pf-names{ font-family:var(--font-display); font-style:italic; font-size:clamp(24px,4vw,32px); text-align:center; color:var(--ivory); }
+.poster-fallback .pf-names{ font-family:var(--font-display); font-style:italic; font-size:clamp(1.5rem,4vw,2rem); text-align:center; color:var(--ivory); }
 .poster-fallback .pf-amp{ color:var(--gold); display:block; margin:.2em 0; }
 .poster-fallback .pf-date{ font-size:var(--caps-size); letter-spacing:.3em; text-transform:uppercase; color:var(--gold); }
-.poster-fallback .pf-cities{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:rgba(248,246,242,.4); }
+.poster-fallback .pf-cities{ font-size:.75rem; letter-spacing:.16em; text-transform:uppercase; color:rgba(248,246,242,.5); }
 
 /* ============================================================
    ENDING
@@ -703,11 +706,11 @@ body.reduced-motion .golden-haze{ animation:none; }
    changing `gap` alone barely moved it. Zeroed here; `gap` now sets it. */
 .ending-lines{ display:flex; flex-direction:column; align-items:center; gap:14px; }
 .ending-line{
-  font-family:var(--font-display); font-style:italic; font-size:clamp(20px,3vw,32px);
+  font-family:var(--font-display); font-style:italic; font-size:clamp(1.25rem,3vw,2rem);
   line-height:1.25; margin:0; opacity:0;
 }
 .ending-distance{
-  font-family:var(--font-mono); font-size:clamp(16px,2vw,22px); letter-spacing:.1em;
+  font-family:var(--font-mono); font-size:clamp(1rem,2vw,1.375rem); letter-spacing:.1em;
   color:rgba(248,246,242,.6); opacity:0; transform:translateY(14px); margin:3vh 0 0;
   font-variant-numeric:tabular-nums;
 }
@@ -722,7 +725,7 @@ body.reduced-motion .golden-haze{ animation:none; }
    above so it lands as its own moment. */
 .ending-invite{
   font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(20px,3vw,32px);
+  font-size:clamp(1.25rem,3vw,2rem); line-height:1.4;
   color:rgba(248,246,242,.88); max-width:34ch; margin:4.5vh auto 0;
   text-wrap:balance;
   opacity:0; transform:translateY(14px);
@@ -731,12 +734,12 @@ body.reduced-motion .golden-haze{ animation:none; }
   content:''; display:block; width:56px; height:1px; margin:0 auto 3.2vh;
   background:linear-gradient(90deg, transparent, rgba(var(--gold-rgb),.8), transparent);
 }
-.ending-names{ font-family:var(--font-display); font-size:clamp(32px,5vw,56px); margin-top:2vh; opacity:0; transform:translateY(16px); }
+.ending-names{ font-family:var(--font-display); font-size:clamp(2rem,5vw,3.5rem); margin-top:2vh; opacity:0; transform:translateY(16px); }
 .ending-names .amp{ color:var(--gold); }
 .ending-date{ font-size:var(--caps-size); letter-spacing:.32em; text-transform:uppercase; color:var(--accent); opacity:0; transform:translateY(10px); }
 .ics-link{
   margin-top:3vh; display:inline-flex; align-items:center; gap:10px;
-  font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold);
+  font-size:.75rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold);
   text-decoration:none; border-bottom:1px solid rgba(var(--gold-rgb),.4); padding-bottom:6px;
   opacity:0; transform:translateY(10px);
   transition:color .3s var(--ease-out), border-color .3s var(--ease-out);
@@ -784,7 +787,7 @@ body.reduced-motion .scroll-hint-label{ animation:none; }
      phone, which forced the grid to overflow the viewport horizontally */
   .details-grid{ grid-template-columns:1fr; }
   .details-card{ padding:30px 22px; }
-  .details-card p{ font-size:17px; }
+  .details-card p{ font-size:1.0625rem; }
   .map-frame{ aspect-ratio:4/3; }
   .map-link{ right:12px; bottom:12px; padding:12px 18px; }
   .details-map{ margin-top:34px; }
@@ -795,9 +798,9 @@ body.reduced-motion .scroll-hint-label{ animation:none; }
   .poster-frame{ width:min(82vw, 380px); }
   .poster-border{ inset:-9px; }
 
-  .earth-caption{ font-size:10px; letter-spacing:.2em; }
-  .earth-caption b{ font-size:16px; }
-  .earth-caption-date, .earth-caption-weather{ font-size:9px; }
+  .earth-caption{ font-size:.625rem; letter-spacing:.2em; }
+  .earth-caption b{ font-size:1rem; }
+  .earth-caption-date, .earth-caption-weather{ font-size:.5625rem; }
   .earth-distance{ bottom:calc(42px + env(safe-area-inset-bottom)); }
 
   .connection-caption{ bottom:20%; max-width:88vw; }
@@ -830,12 +833,12 @@ body.reduced-motion .scroll-hint-label{ animation:none; }
 /* ---------- narrow phones / Fold folded ---------- */
 @media (max-width:400px){
   .flip-card{ width:clamp(56px,17vw,74px); height:clamp(68px,21vw,92px); }
-  .flip-face{ font-size:clamp(26px,9vw,38px); }
+  .flip-face{ font-size:clamp(1.625rem,9vw,2.375rem); }
   .flip-unit{ gap:9px; }
   .countdown-grid{ gap:8px; }
   .details-card{ padding:26px 18px; }
   .connection-caption{ bottom:18%; }
-  .connection-caption-text{ font-size:clamp(17px,5.2vw,22px); }
+  .connection-caption-text{ font-size:clamp(1.0625rem,5.2vw,1.375rem); }
   .connection-caption-date{ margin-bottom:9px; }
   .map-frame{ aspect-ratio:1/1; }
   .ics-link{ letter-spacing:.14em; }
@@ -843,16 +846,16 @@ body.reduced-motion .scroll-hint-label{ animation:none; }
 
 /* ---------- Flip cover screen and anything near it ---------- */
 @media (max-width:320px){
-  :root{ --scene-pad:16px; --caps-size:11px; }
+  :root{ --scene-pad:16px; --caps-size:.6875rem; }
   /* four flip cards can't sit on one row this narrow — two per row reads
      better than four cramped ones wrapping unevenly */
   .countdown-grid{ display:grid; grid-template-columns:repeat(2,auto); justify-content:center; gap:10px; }
   .flip-card{ width:64px; height:78px; }
-  .flip-face{ font-size:30px; }
+  .flip-face{ font-size:1.875rem; }
   .details-card{ padding:22px 16px; }
-  .ending-line{ font-size:18px; }
-  .ending-names{ font-size:26px; }
-  .ending-distance{ font-size:14px; letter-spacing:.06em; }
+  .ending-line{ font-size:1.125rem; }
+  .ending-names{ font-size:1.625rem; }
+  .ending-distance{ font-size:.875rem; letter-spacing:.06em; }
   .poster-frame{ width:88vw; }
 }
 
@@ -881,7 +884,7 @@ body.reduced-motion .scroll-hint-label{ animation:none; }
   }
   .rotate-notice-title{
     font-family:var(--font-display); font-style:italic; font-weight:400;
-    font-size:clamp(19px,4.4vh,26px); line-height:1.3; color:var(--ivory); margin:0;
+    font-size:clamp(1.1875rem,4.4vh,1.625rem); line-height:1.3; color:var(--ivory); margin:0;
   }
   .rotate-notice-sub{
     font-family:var(--font-body); font-size:var(--caps-size);
@@ -894,15 +897,15 @@ body.reduced-motion .scroll-hint-label{ animation:none; }
    ~400px of height: full-height scenes still have to hold a caption, so
    the vertical rhythm tightens rather than overflowing. */
 @media (max-height:560px) and (orientation:landscape){
-  .scene-caption{ font-size:clamp(19px,3.4vh,28px); }
-  .scene-subline{ font-size:13px; margin-top:9px; }
+  .scene-caption{ font-size:clamp(1.1875rem,3.4vh,1.75rem); }
+  .scene-subline{ font-size:.8125rem; margin-top:9px; }
   .connection-caption{ bottom:13%; }
-  .connection-caption-text{ font-size:clamp(16px,3.4vh,23px); }
+  .connection-caption-text{ font-size:clamp(1rem,3.4vh,1.4375rem); }
   .connection-caption-date{ margin-bottom:7px; }
   .connection-countdown{ bottom:11%; }
   .flip-card{ width:clamp(50px,9vh,72px); height:clamp(60px,11vh,88px); }
-  .flip-face{ font-size:clamp(24px,6vh,36px); }
-  .opening-greeting-text{ font-size:clamp(24px,7vh,38px); }
+  .flip-face{ font-size:clamp(1.5rem,6vh,2.25rem); }
+  .opening-greeting-text{ font-size:clamp(1.5rem,7vh,2.375rem); }
   .scroll-hint{ height:52px; bottom:calc(22px + env(safe-area-inset-bottom)); }
   /* landscape crops the photos top and bottom instead of left and right, so the
      baked-in lockup stays whole and this stays the desktop treatment — but at
@@ -911,7 +914,7 @@ body.reduced-motion .scroll-hint-label{ animation:none; }
   #scene-munich .city-content{ top:26%; }
   #scene-bangalore .city-content{ top:22%; }
   .earth-distance{ bottom:calc(24px + env(safe-area-inset-bottom)); }
-  .earth-distance .km{ font-size:clamp(22px,5vh,32px); }
+  .earth-distance .km{ font-size:clamp(1.375rem,5vh,2rem); }
   .ending-inner{ gap:2.6vh; }
   .ending-lines{ gap:7px; }
   .reveal-flow-inner{ gap:7vh; }
