@@ -444,7 +444,17 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 /* ============================================================
    SCENE 2 — LIVING EARTH
    ============================================================ */
-#scene-earth .pin-wrap{ background:var(--bg); }
+/* on a wide/short viewport the sphere (fit to the shorter edge) leaves a lot of
+   flat, empty canvas on the sides — making it bigger risks reclipping the exact
+   top/bottom margin the camera math above is tuned to protect, so instead this
+   gives the negative space a reason to be there: a soft wash of the halo's own
+   blue, the same color as the atmosphere glow drawn in the WebGL scene, so the
+   corners read as "deep space around the globe" rather than dead empty canvas. */
+#scene-earth .pin-wrap{
+  background:
+    radial-gradient(ellipse 75% 68% at 50% 46%, rgba(92,130,174,.12), transparent 72%),
+    var(--bg);
+}
 .earth-caption{
   position:absolute; z-index:6; font-family:var(--font-body);
   font-size:.6875rem; letter-spacing:.28em; text-transform:uppercase; color:var(--ivory);
