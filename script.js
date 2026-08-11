@@ -497,11 +497,18 @@ const EarthScene = (function(){
     const wantedRadiusPx = Math.min(w*0.475, h*0.38);
     return Math.max(1, (RADIUS/FOV_TAN) * (h/2) / wantedRadiusPx / 480);
   }
+  /* on a tall/narrow frame (tablet and phone portrait) the globe reads hard
+     against the top edge with a lot of empty space below it by the time the
+     scene has zoomed in — worse as progress -> 1, negligible on wide desktop
+     frames. Aiming slightly above the globe's true center pushes its
+     rendered position down in frame without moving the camera itself, so the
+     markers/arc (which key off the same lookAt) stay geometrically correct. */
   function placeCamera(progress){
     const t = clamp01(progress*1.3);
     camera.position.z = lerp(480, 420, t) * camScale;
     camera.position.y = lerp(30, 6, t) * camScale;
-    camera.lookAt(0, 0, 0);
+    const portraitT = clamp01((1/Math.max(camera.aspect,0.0001) - 1) / 1.2);
+    camera.lookAt(0, RADIUS*0.55*portraitT*t, 0);
   }
   let scene, camera, renderer, globe, landPoints3D, starField, cloudField, arcLine, arcPulse, arcPulsePoints, canvas;
   let munichMarker, bangaloreMarker;
