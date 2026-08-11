@@ -346,6 +346,11 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   position:absolute; bottom:52px; left:50%; transform:translateX(-50%);
   width:2px; height:96px; z-index:6;
   opacity:0; transition:opacity 1.2s var(--ease-out);
+  /* purely decorative (aria-hidden) — its label can geometrically overlap
+     real controls on short viewports (see the gate's landscape-tablet fix
+     below), and without this a tap landing on the label's own box never
+     reaches whatever sits underneath it */
+  pointer-events:none;
 }
 .scroll-hint.is-visible{ opacity:.9; }
 /* once the music choice is behind them the light is the only thing left asking
@@ -918,6 +923,27 @@ body.reduced-motion .scroll-hint-label{ animation:none; }
   .ending-inner{ gap:2.6vh; }
   .ending-lines{ gap:7px; }
   .reveal-flow-inner{ gap:7vh; }
+}
+
+/* ---------- gate scene: tablets in landscape ----------
+   the phone-landscape rule above only kicks in under 560px, since a
+   tablet at 768px+ has room to spare — but the satellite art doesn't
+   scale down with viewport height at all (its width is capped at 330px
+   well before 62vw ever binds on a tablet-width screen), so its centered
+   height stays fixed while the scroll cue below it is anchored to the
+   scene's own bottom edge. Below ~700px of height those two independently
+   positioned elements close the gap between them and start to overlap:
+   the cue's label — geometrically, not just visually — sits on top of
+   the "tap to continue" / "press for sound" plaque, and since taps on it
+   never reach the button underneath (fixed separately via pointer-events
+   on .scroll-hint above), the plaque simply stopped responding to a tap
+   landing anywhere in the overlapped lower half of it. This shrinks the
+   art and pulls the cue in tighter so the two stay clear of each other
+   through the shorter end of the tablet-landscape range. */
+@media (orientation:landscape) and (max-height:720px) and (min-height:561px){
+  .gate-sat{ gap:clamp(24px, 6vh, 56px); }
+  .gate-sat-svg{ width:clamp(160px, 30vh, 260px); }
+  #gateScrollCue{ height:56px; bottom:calc(20px + env(safe-area-inset-bottom)); }
 }
 
 /* ---------- touch devices: real tap targets ----------
