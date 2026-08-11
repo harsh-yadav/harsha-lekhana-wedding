@@ -2212,6 +2212,16 @@ function initMusicGate(){
      dot navigation is built from the section list. */
   if(!btn || !btn.isConnected){ gate.remove(); return; }
 
+  /* hold scroll until the first tap ("tap to continue") actually happens —
+     without this, scrolling past an untouched gate silently counted as a
+     real answer (declining music) rather than as just not having answered
+     yet. Skipped if a reload restored the visitor somewhere past the gate
+     already (matches the same 0.35 threshold `onScroll` below uses to
+     decide "already passed this") so a returning visitor can never get
+     trapped unable to scroll a gate they're not even looking at. */
+  const startsAtGate = window.scrollY < window.innerHeight * 0.35;
+  if(startsAtGate) document.documentElement.classList.add('gate-scroll-locked');
+
   const svg    = sat.querySelector('.gate-sat-svg');
   const inner  = sat.querySelector('.gate-sat-inner');
   const craft  = sat.querySelector('.gate-craft');
@@ -2376,6 +2386,8 @@ function initMusicGate(){
           state = S.PROMPT;
           sat.dataset.stage = 'sound';
           sat.setAttribute('aria-label', 'Turn the music on');
+          /* the first tap is the only thing this lock was ever waiting for */
+          document.documentElement.classList.remove('gate-scroll-locked');
           /* the cue has nothing to say until there's a choice on screen to
              react to — it only turns on once the plaque has become that choice */
           if(cue) cue.classList.add('is-visible');

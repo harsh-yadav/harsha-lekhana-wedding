@@ -38,6 +38,11 @@ html{
   -webkit-text-size-adjust:100%; text-size-adjust:100%;
 }
 html.no-js-scroll{scroll-behavior:auto;}
+/* held while the gate's first tap ("Tap to continue") hasn't happened yet —
+   see initMusicGate() in script.js. Without this, scrolling past the gate
+   before ever touching it silently counted as a real answer (declining
+   music) instead of just... not having answered anything yet. */
+html.gate-scroll-locked{ overflow:hidden; }
 body{
   margin:0;
   background:var(--bg);
