@@ -301,10 +301,24 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
    other beats. At this height every full-weight beat still spans 108vh of
    scroll, exactly as before, and the short one spans 54vh. */
 .scene-tall.connection-tall{ height:1000vh; height:1000svh; }
+/* dvh here, svh on the scroll boxes above — the two units are doing different
+   jobs. A scene's *height* sets its scroll length, so it wants svh: a length
+   that never changes underfoot, or the page would re-measure and jump every
+   time the address bar slides. This box is the pinned stage itself, and
+   ScrollTrigger freezes it as `position:fixed; height:<measured>px`, so what it
+   needs is the height of the screen it is actually covering. At svh that
+   measurement is the address-bar-visible viewport, which leaves the stage
+   (innerHeight - 100svh) short of the real screen for the entire pinned scene —
+   an uncovered band along the bottom that hides in plain sight while the scene
+   below it is still black, then reads as a hard black strip the moment the pale
+   Munich panel slides up into it, with the globe apparently cut off above.
+   dvh measures the screen as it actually is, so the stage always covers it; and
+   if the bar later reappears, dvh errs toward slightly too *tall* — absorbed by
+   overflow:hidden — rather than too short, which is the failure that shows. */
 .pin-wrap{
   position:relative; width:100%; overflow:hidden;
   height:100vh;
-  height:100svh;
+  height:100dvh;
   display:flex; align-items:center; justify-content:center;
 }
 .scene-canvas{ position:absolute; inset:0; width:100%; height:100%; }
