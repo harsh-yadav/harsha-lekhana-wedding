@@ -2689,15 +2689,16 @@ function initScrollSnap(){
      scroll range IS the scrub being watched. Countdown & Details ("The
      celebration"): a long, ordinary read of wedding info — pausing partway
      through a paragraph shouldn't yank the page back up to its heading.
-     Munich / Bangalore: each is a single viewport landing right after a
-     scene that hands off a lot of scroll momentum (Earth's long scrub
-     ahead of Munich; an ordinary flick out of Munich itself ahead of
-     Bangalore) — heading forward always targets the *next* untouched
-     top, so a settle that lands even a few px past this scene's own top
-     skipped it entirely and completed straight through to the one after.
-     Protecting the interior keeps the visitor here, wherever they landed,
-     instead of losing the scene and its caption altogether. */
-  const arrivalOnly = new Set(['scene-earth','scene-connection','scene-savedate','scene-munich','scene-bangalore']);
+     Opening / Munich / Bangalore: each is a single viewport landing right
+     after a scene that hands off a lot of scroll momentum (out of the gate
+     ahead of Opening; Earth's long scrub ahead of Munich; an ordinary
+     flick out of Munich itself ahead of Bangalore) — heading forward
+     always targets the *next* untouched top, so a settle that lands even
+     a few px past this scene's own top skipped it entirely and completed
+     straight through to the one after. Protecting the interior keeps the
+     visitor here, wherever they landed, instead of losing the scene and
+     its own content altogether. */
+  const arrivalOnly = new Set(['scene-opening','scene-earth','scene-connection','scene-savedate','scene-munich','scene-bangalore']);
   let targets = scenes.filter(el => !handsOff.has(el.id));
   /* the gate hands off its own scroll the moment it's answered (tap or
      scroll-past) — from then on it's an inert resting scene like any other,
