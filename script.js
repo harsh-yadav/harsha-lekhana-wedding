@@ -929,6 +929,13 @@ const EarthScene = (function(){
    ============================================================ */
 const ConnectionScene = (function(){
   let canvas, ctx, w, h, raf, visible = false, progress = 0;
+  /* every fixed-pixel dot/glow radius below is specified in canvas (already
+     dpr-scaled) space, same as `w`/`h` — dpr itself has to be scaled through
+     too, matching how ParticleField already does it, or a "10" is only 10
+     *device* pixels: 5 real CSS pixels on an ordinary 2x phone screen, a
+     third of that on 3x. That's the whole story scene reading tiny on
+     exactly the devices most guests will actually open this on. */
+  let dpr = 1;
   const ease = t => t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
 
   /* phase boundaries across the single continuous 0..1 progress —
@@ -1096,7 +1103,7 @@ const ConnectionScene = (function(){
 
   function resize(){
     const r = canvas.getBoundingClientRect();
-    const dpr = Math.min(devicePixelRatio||1, MAX_PIXEL_RATIO);
+    dpr = Math.min(devicePixelRatio||1, MAX_PIXEL_RATIO);
     w = canvas.width = r.width*dpr; h = canvas.height = r.height*dpr;
     ctx.setTransform(1,0,0,1,0,0);
     /* cached finale particle positions are in absolute pixel space — stale on resize */
@@ -1340,7 +1347,7 @@ const ConnectionScene = (function(){
       const pt = quadPoint(from, to, [midX,midY], tt);
       const alpha = Math.sin(tt*Math.PI) * 0.9;
       ctx.beginPath();
-      ctx.arc(pt[0], pt[1], 1.8, 0, Math.PI*2);
+      ctx.arc(pt[0], pt[1], 1.8*dpr, 0, Math.PI*2);
       ctx.fillStyle = `rgba(212,175,55,${Math.max(0,alpha).toFixed(3)})`;
       ctx.fill();
     }
@@ -1383,6 +1390,7 @@ const ConnectionScene = (function(){
 
   function drawMoonDisc(x, y, r, alpha){
     if(alpha <= 0) return;
+    r *= dpr;
     ctx.globalAlpha = alpha;
     const glow = ctx.createRadialGradient(x,y,0,x,y,r*4);
     glow.addColorStop(0, 'rgba(234,240,246,0.28)'); glow.addColorStop(1, 'rgba(234,240,246,0)');
@@ -1413,7 +1421,7 @@ const ConnectionScene = (function(){
       igniteDelay: Math.random()*0.22,
       twinklePhase: Math.random()*Math.PI*2,
       twinkleSpeed: 3+Math.random()*4,
-      size: 1+Math.random()*1.6
+      size: (1+Math.random()*1.6)*dpr
     };
   }
   let finaleParticles = null;
@@ -1491,7 +1499,7 @@ const ConnectionScene = (function(){
     ambientStarsDims = [w,h];
     ambientStars = new Array(40).fill(0).map(()=>({
       x: Math.random()*w, y: Math.random()*h,
-      size: 0.6+Math.random()*1.1,
+      size: (0.6+Math.random()*1.1)*dpr,
       phase: Math.random()*Math.PI*2,
       speed: 0.4+Math.random()*0.6
     }));
@@ -1655,6 +1663,7 @@ const ConnectionScene = (function(){
   }
 
   function drawGlow(x,y,r,color){
+    r *= dpr;
     const g = ctx.createRadialGradient(x,y,0,x,y,r*6);
     /* strip the trailing alpha number (integer OR decimal) down to 0 so the
        gradient always fades to fully transparent — a plain 'X)' -> '0)'
@@ -1784,7 +1793,7 @@ const ConnectionScene = (function(){
       const pt = pointFn(clamp01(prog - (i/TRAIL_DOTS)*TRAIL_SPAN));
       ctx.globalAlpha = (1-i/TRAIL_DOTS) * 0.5;
       ctx.beginPath();
-      ctx.arc(pt[0], pt[1], 2.4, 0, Math.PI*2);
+      ctx.arc(pt[0], pt[1], 2.4*dpr, 0, Math.PI*2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
