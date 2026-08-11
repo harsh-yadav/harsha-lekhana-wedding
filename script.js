@@ -2700,8 +2700,16 @@ document.addEventListener('DOMContentLoaded', function(){
 
   if(!REDUCED_MOTION && wedding.features.smoothScroll && window.Lenis){
     lenisInstance = new Lenis({
-      duration: 1.15,
-      easing: t => Math.min(1, 1.001 - Math.pow(2, -10*t)),
+      /* a fast trackpad flick used to keep the pinned scenes (Living Earth,
+         Connection) visibly drifting for the better part of a second after
+         the hand actually stopped — this curve was front-loaded enough that
+         a hard flick banked most of its motion as pure momentum rather than
+         tracking the gesture. Shorter duration and a gentler cubic-out keep
+         the same soft, glidey feel for ordinary scrolling while cutting
+         that coast down to something the eye doesn't register as separate
+         from the scroll itself. */
+      duration: 0.7,
+      easing: t => 1 - Math.pow(1 - t, 3),
       smoothWheel: true,
       smoothTouch: false,
       touchMultiplier: 1.2
