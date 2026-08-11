@@ -1346,9 +1346,15 @@ const ConnectionScene = (function(){
       const from = dir===1 ? a : b, to = dir===1 ? b : a;
       const pt = quadPoint(from, to, [midX,midY], tt);
       const alpha = Math.sin(tt*Math.PI) * 0.9;
+      const a2 = Math.max(0,alpha);
+      /* a soft halo under the crisp core — every other light in this scene
+         glows; these were the one flat, hard-edged dot, and at their old
+         1.8px core alone they read as barely-there specks rather than as
+         points of the same light everything else in the scene is made of */
+      drawGlow(pt[0], pt[1], 2.6, `rgba(212,175,55,${a2.toFixed(3)})`);
       ctx.beginPath();
-      ctx.arc(pt[0], pt[1], 1.8*dpr, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(212,175,55,${Math.max(0,alpha).toFixed(3)})`;
+      ctx.arc(pt[0], pt[1], 2.6*dpr, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(212,175,55,${a2.toFixed(3)})`;
       ctx.fill();
     }
   }
