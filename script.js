@@ -1853,7 +1853,7 @@ const Countdown = (function(){
           faces[k].style.transition = 'none';
           faces[k].style.transform = 'rotateX(90deg)';
           requestAnimationFrame(()=>{
-            faces[k].style.transition = 'transform .35s ease-out';
+            faces[k].style.transition = 'transform .35s var(--ease-out)';
             faces[k].style.transform = 'rotateX(0deg)';
           });
         }
@@ -1934,7 +1934,7 @@ const PosterScene = (function(){
       const fallback = document.createElement('div');
       fallback.className = 'poster-fallback';
       fallback.innerHTML = `
-        <div class="pf-names">${wedding.groom}<span class="pf-amp">&#10084;</span>${wedding.bride}</div>
+        <div class="pf-names">${wedding.groom}<span class="pf-amp">&#9829;</span>${wedding.bride}</div>
         <div class="pf-date">${wedding.weddingDateDisplay}</div>`;
       frame.insertBefore(fallback, frame.firstChild);
     }, { once:true });
@@ -1980,13 +1980,29 @@ function initAmbientFields(){
    is missed.
    ============================================================ */
 function setupReveals(){
+  /* the schedule/venue cards are a true list (siblings on one row at the same
+     scroll depth), so the generic one-el-one-trigger pass below would fire
+     them all in the same instant — a flat block, not a reveal. They get their
+     own staggered pass instead; everything else keeps the per-element pass. */
   gsap.utils.toArray('.will-reveal').forEach((el, i)=>{
+    if(el.closest('.details-grid')) return;
     if(REDUCED_MOTION){ el.classList.add('is-revealed'); return; }
     gsap.to(el, {
       opacity:1, y:0, duration:1.1, ease:'power3.out',
       scrollTrigger:{ trigger: el, start:'top 88%', toggleActions:'play none none reverse' }
     });
   });
+
+  const cards = gsap.utils.toArray('.details-grid .details-card');
+  if(cards.length){
+    if(REDUCED_MOTION){ cards.forEach(el => el.classList.add('is-revealed')); }
+    else {
+      gsap.to(cards, {
+        opacity:1, y:0, duration:0.9, ease:'power3.out', stagger:0.12,
+        scrollTrigger:{ trigger:'.details-grid', start:'top 88%', toggleActions:'play none none reverse' }
+      });
+    }
+  }
 
   /* opening scene title lines + scroll cue play once, right after the loader (see initLoader) */
 
