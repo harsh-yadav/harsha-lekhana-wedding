@@ -2270,11 +2270,6 @@ function initMusicGate(){
       gsap.set(btn, { clearProps:'transform,opacity,boxShadow' });
     }
     if(cue) cue.classList.add('is-primed');        // the light is the cue now
-    /* the gate is now just an inert resting scene like any other — the
-       scroll-snap system (see initScrollSnap) was holding off settling
-       anywhere near it while it still owned the visitor's answer; that's
-       done now, so let scrolling back up here settle the same as anywhere else */
-    window.dispatchEvent(new Event('gate:resolved'));
   }
 
   /* ---- DISSOLVE -> DOCKING -> READY -----------------------------------
@@ -2657,143 +2652,6 @@ function initOpeningLaunch(){
 }
 
 /* ============================================================
-   21. SCROLL SNAP — a firm pause at every scene boundary. Plain
-   sections are exactly one viewport tall, but a fast flick can still
-   leave the visitor stalled mid-way between two of them; once
-   scrolling actually comes to rest, this eases onward in whichever
-   direction they were already headed, so every arrival reads as a
-   deliberate stop rather than scroll-through.
-
-   Some scenes are deliberately left out of that search while scrolled
-   inside them:
-     - the music gate: it already owns the first screen's scroll
-       (tap vs. decline-by-scrolling), and fighting that with a second,
-       generic scroll handler would undo its own timing;
-     - Living Earth / Connection: pinned, scrub-driven scenes whose
-       entire scroll range IS the animation being watched — snapping
-       mid-scrub would yank the visitor back out of whatever moment
-       they'd paused on;
-     - Countdown & Details ("The celebration"): a long, ordinary read
-       of wedding info, where pausing mid-paragraph shouldn't jump the
-       page back up to the heading.
-     Arriving cleanly on a scene's top edge from outside it is still
-     useful, so (except for the gate) their tops remain valid targets.
-   ============================================================ */
-function initScrollSnap(){
-  if(REDUCED_MOTION) return;
-  const scenes = $$('main > .scene');
-  if(scenes.length < 2) return;
-  const handsOff = new Set(['scene-gate']);   // no auto-settle anywhere inside, until answered
-  /* top is a valid target (arriving from before still snaps cleanly onto the
-     edge); the interior is not. Living Earth / Connection: their whole
-     scroll range IS the scrub being watched. Countdown & Details ("The
-     celebration"): a long, ordinary read of wedding info — pausing partway
-     through a paragraph shouldn't yank the page back up to its heading.
-     Opening / Munich / Bangalore: each is a single viewport landing right
-     after a scene that hands off a lot of scroll momentum (out of the gate
-     ahead of Opening; Earth's long scrub ahead of Munich; an ordinary
-     flick out of Munich itself ahead of Bangalore) — heading forward
-     always targets the *next* untouched top, so a settle that lands even
-     a few px past this scene's own top skipped it entirely and completed
-     straight through to the one after. Protecting the interior keeps the
-     visitor here, wherever they landed, instead of losing the scene and
-     its own content altogether. */
-  const arrivalOnly = new Set(['scene-opening','scene-earth','scene-connection','scene-savedate','scene-munich','scene-bangalore']);
-  let targets = scenes.filter(el => !handsOff.has(el.id));
-  /* the gate hands off its own scroll the moment it's answered (tap or
-     scroll-past) — from then on it's an inert resting scene like any other,
-     so scrolling back up to it should settle cleanly instead of always
-     overshooting to whatever comes after it */
-  window.addEventListener('gate:resolved', ()=>{
-    handsOff.delete('scene-gate');
-    targets = scenes.filter(el => !handsOff.has(el.id));
-  }, { once:true });
-
-  const sceneTop = el => el.getBoundingClientRect().top + window.scrollY;
-  const sceneBottom = el => sceneTop(el) + el.offsetHeight;
-
-  function insideNoSettleRange(y){
-    for(const el of scenes){
-      if(!handsOff.has(el.id) && !arrivalOnly.has(el.id)) continue;
-      const margin = handsOff.has(el.id) ? 0 : 24;
-      if(y > sceneTop(el) + margin && y < sceneBottom(el) - margin) return true;
-    }
-    return false;
-  }
-
-  let idleTimer = null;
-  let suspended = false;   // our own settle animation is currently running
-  const IDLE_MS = 180;
-  const SETTLE_DURATION = 0.8;
-
-  /* which way the visitor was actually headed when they stopped — settling
-     continues that motion (down -> the next scene ahead, up -> the one
-     behind) rather than always jumping to whichever edge is geometrically
-     closer, which could otherwise reverse a scroll that was clearly headed
-     forward. Only updated from real scroll activity, never from the settle
-     animation's own motion (see release(), below), so arriving on a scene
-     can't be misread as momentum toward the next one and chain forward. */
-  let lastY = window.scrollY;
-  let direction = 0;   // 1 = heading down, -1 = heading up, 0 = unknown
-
-  /* ScrollTrigger.refresh() (on load, and again once the loader hands off)
-     briefly scrolls the real document to measure the pinned scenes, then
-     puts it back — those synthetic jumps read as "the visitor stopped
-     scrolling here" to a naive listener, and this settled to the next
-     scene on its own before anyone had touched the page. Checking
-     ScrollTrigger.isRefreshing isn't enough on its own: the browser
-     defers the actual 'scroll' event dispatch, so it can still arrive
-     after refresh() has already finished and isRefreshing is back to
-     false. A short cooldown after ScrollTrigger's own 'refresh' event
-     covers that gap regardless of when the stray event lands. */
-  let refreshCooldownUntil = performance.now() + 500;
-  ScrollTrigger.addEventListener('refresh', ()=>{ refreshCooldownUntil = performance.now() + 500; });
-  const duringRefreshCooldown = ()=> performance.now() < refreshCooldownUntil;
-
-  function settle(){
-    if(suspended || duringRefreshCooldown() || ScrollTrigger.isRefreshing) return;
-    const y = window.scrollY;
-    if(insideNoSettleRange(y)) return;
-    const tops = targets.map(sceneTop);
-
-    let nearest = null;
-    if(direction > 0) nearest = Math.min(...tops.filter(t => t > y + 2), Infinity);
-    else if(direction < 0) nearest = Math.max(...tops.filter(t => t < y - 2), -Infinity);
-    if(nearest == null || !isFinite(nearest)){
-      /* no scene left in the direction we were heading (e.g. past the last
-         one), or direction is still unknown — fall back to whichever edge
-         is actually nearest rather than doing nothing */
-      let nearestDist = Infinity;
-      tops.forEach(t=>{ const d = Math.abs(t - y); if(d < nearestDist){ nearestDist = d; nearest = t; } });
-      if(nearest == null || nearestDist < 2) return;
-    }
-
-    suspended = true;
-    const release = ()=>{ suspended = false; direction = 0; lastY = window.scrollY; };
-    if(lenisInstance){
-      lenisInstance.scrollTo(nearest, { duration: SETTLE_DURATION, onComplete: release });
-    } else {
-      window.scrollTo({ top: nearest, behavior:'smooth' });
-    }
-    setTimeout(release, SETTLE_DURATION*1000 + 100);   // in case the animation is interrupted
-  }
-
-  function onScrollActivity(){
-    if(duringRefreshCooldown() || ScrollTrigger.isRefreshing) return;
-    if(!suspended){
-      const y = window.scrollY;
-      const dy = y - lastY;
-      if(dy > 0.5) direction = 1;
-      else if(dy < -0.5) direction = -1;
-      lastY = y;
-    }
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(settle, IDLE_MS);
-  }
-  window.addEventListener('scroll', onScrollActivity, { passive:true });
-}
-
-/* ============================================================
    22. INIT
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function(){
@@ -2852,7 +2710,6 @@ document.addEventListener('DOMContentLoaded', function(){
     gsap.ticker.add((time)=>{ lenisInstance.raf(time*1000); });
     gsap.ticker.lagSmoothing(0);
   }
-  initScrollSnap();
 
   window.addEventListener('load', ()=> ScrollTrigger.refresh());
   /* only a real layout change should trigger a refresh. A height-only
