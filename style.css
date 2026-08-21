@@ -539,7 +539,10 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   padding:clamp(48px, 8vh, 88px) var(--scene-pad);
   background:var(--bg);
 }
-.person-eyebrow{ margin:0; }
+.person-eyebrow{
+  margin:0; opacity:1;
+  font-size:clamp(2rem, 5vw, 3.25rem); letter-spacing:.14em;
+}
 .person-photo-frame{ display:flex; justify-content:center; }
 .person-photo{
   display:block;
