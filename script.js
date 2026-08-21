@@ -23,6 +23,8 @@ const wedding = {
   mapLink:"https://maps.app.goo.gl/HZXWvWaQQnxGUJPHA",
   poster:"poster.png",
   music:"music.mp3",
+  bridePhoto:"Bride.jpg",
+  groomPhoto:"groom.jpg",
   theme:{
     background:"#050505",
     gold:"#D4AF37",
@@ -2758,6 +2760,8 @@ document.addEventListener('DOMContentLoaded', function(){
   if(wedding.features.countdown) Countdown.init();
   DetailsRenderer.init();
   PosterScene.init();
+  document.getElementById('bridePhoto').src = wedding.bridePhoto;
+  document.getElementById('groomPhoto').src = wedding.groomPhoto;
 
   initAmbientFields();
   setupReveals();

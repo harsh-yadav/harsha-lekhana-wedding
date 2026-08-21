@@ -523,6 +523,36 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 .earth-distance .lbl{ font-size:var(--caps-size); letter-spacing:.3em; text-transform:uppercase; color:var(--accent); margin-top:4px; }
 
 /* ============================================================
+   SCENE — THE BRIDE / THE GROOM
+   A quiet editorial beat, not a photo card: the eyebrow names the role,
+   the photograph carries the moment, the first name closes it. No frame,
+   no tint over the photo, no caption beyond what's already here — the
+   picture is the point. object-fit:contain (rather than sizing to a
+   guessed aspect-ratio) means neither photo can ever be cropped, and
+   each keeps whatever proportions it actually has, independently of
+   the other.
+   ============================================================ */
+.person-scene{
+  min-height:100vh; min-height:100svh;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:clamp(20px, 3.4vh, 34px);
+  padding:clamp(48px, 8vh, 88px) var(--scene-pad);
+  background:var(--bg);
+}
+.person-eyebrow{ margin:0; }
+.person-photo-frame{ display:flex; justify-content:center; }
+.person-photo{
+  display:block;
+  height:min(58vh, 620px); width:auto; max-width:88vw;
+  object-fit:contain;
+  box-shadow:0 30px 90px rgba(0,0,0,.55);
+}
+.person-name{
+  font-family:var(--font-display); font-weight:400; font-style:italic;
+  font-size:clamp(1.75rem, 4.4vw, 3rem); color:var(--ivory); margin:0;
+}
+
+/* ============================================================
    SCENE 3 / 4 — MUNICH & BANGALORE
    ============================================================ */
 /* each scene is now the photo (one fixed screen, exactly as designed) followed
@@ -746,9 +776,15 @@ body.reduced-motion .golden-haze{ animation:none; }
    ============================================================ */
 /* the poster sits in the flow of the details block, directly under the
    heading and above the schedule — it reveals with the same .will-reveal
-   pass as everything else around it rather than owning its own scene */
+   pass as everything else around it rather than owning its own scene.
+   aspect-ratio is set from poster.png's own actual pixel dimensions
+   (2168x4000) rather than assumed — object-fit:contain on the img below
+   means a mismatch here would only ever show as letterboxing, never
+   distortion or cropping, but matching it exactly means the frame hugs
+   the real image with none. Re-measure and update this if the asset is
+   ever replaced with different dimensions again. */
 .poster-frame{
-  position:relative; width:min(64vw, 460px); aspect-ratio:1240/1748;
+  position:relative; width:min(64vw, 460px); aspect-ratio:2168/4000;
   margin:3vh auto 0; background:#e4e6da;
 }
 .poster-frame img{ width:100%; height:100%; object-fit:contain; border-radius:2px; }
