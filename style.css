@@ -553,9 +553,10 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   font-size:clamp(1.75rem, 4.4vw, 3rem); color:var(--ivory); margin:0;
 }
 .person-descriptor{
-  font-family:var(--font-body); font-weight:400;
-  font-size:clamp(.8125rem, 1.3vw, .9375rem); letter-spacing:.05em;
-  color:rgba(248,246,242,.6); margin:0; max-width:34ch; text-align:center;
+  font-family:var(--font-body); font-weight:500;
+  font-size:clamp(.8125rem, 1.3vw, .9375rem); letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent); margin:0; max-width:34ch; text-align:center;
 }
 
 /* ============================================================
@@ -746,9 +747,10 @@ body.reduced-motion .golden-haze{ animation:none; }
   font-size:clamp(.9375rem,1.7vw,1.25rem); color:var(--accent); margin:7vh 0 0;
 }
 .connection-countdown-date{
-  font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em;
-  text-transform:uppercase; color:var(--accent); margin:1.6rem 0 0;
-  text-shadow:0 1px 8px rgba(0,0,0,.65);
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(1.75rem, 4vw, 2.75rem); color:var(--gold);
+  margin:2.2rem 0 0;
+  text-shadow:0 2px 24px rgba(var(--gold-rgb),.3), 0 1px 8px rgba(0,0,0,.65);
 }
 /* the one section heading that names the day itself — gold rather than ivory,
    so it reads as the invitation's own title and not another scene caption */
