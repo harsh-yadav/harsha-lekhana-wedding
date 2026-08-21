@@ -543,8 +543,9 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 .person-photo-frame{ display:flex; justify-content:center; }
 .person-photo{
   display:block;
-  height:min(58vh, 620px); width:auto; max-width:88vw;
+  height:min(68vh, 720px); width:auto; max-width:92vw;
   object-fit:contain;
+  filter:brightness(1.12) saturate(1.06);
   box-shadow:0 30px 90px rgba(0,0,0,.55);
 }
 .person-heading{ display:flex; flex-direction:column; align-items:center; gap:10px; }
@@ -599,7 +600,7 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 #scene-munich .city-story{ background:#0B1420; }
 #scene-bangalore .city-story{ background:#1a0f08; }
 .city-story p{
-  font-family:var(--font-body); font-weight:400; text-align:left;
+  font-family:var(--font-body); font-weight:400; text-align:justify;
   font-size:clamp(1.0625rem, 1.6vw, 1.3125rem); line-height:1.75;
   color:rgba(248,246,242,.82);
   max-width:58ch; margin:0 auto;
