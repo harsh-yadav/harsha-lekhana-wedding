@@ -539,12 +539,16 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   padding:clamp(48px, 8vh, 88px) var(--scene-pad);
   background:var(--bg);
 }
-.person-eyebrow{ margin:0; }
+.person-eyebrow{
+  margin:0; opacity:1;
+  font-size:clamp(2rem, 5vw, 3.25rem); letter-spacing:.14em;
+}
 .person-photo-frame{ display:flex; justify-content:center; }
 .person-photo{
   display:block;
-  height:min(58vh, 620px); width:auto; max-width:88vw;
+  height:min(68vh, 720px); width:auto; max-width:92vw;
   object-fit:contain;
+  filter:brightness(1.12) saturate(1.06);
   box-shadow:0 30px 90px rgba(0,0,0,.55);
 }
 .person-heading{ display:flex; flex-direction:column; align-items:center; gap:10px; }
@@ -553,9 +557,10 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   font-size:clamp(1.75rem, 4.4vw, 3rem); color:var(--ivory); margin:0;
 }
 .person-descriptor{
-  font-family:var(--font-body); font-weight:400;
-  font-size:clamp(.8125rem, 1.3vw, .9375rem); letter-spacing:.05em;
-  color:rgba(248,246,242,.6); margin:0; max-width:34ch; text-align:center;
+  font-family:var(--font-body); font-weight:500;
+  font-size:clamp(.8125rem, 1.3vw, .9375rem); letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent); margin:0; max-width:34ch; text-align:center;
 }
 
 /* ============================================================
@@ -598,7 +603,7 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 #scene-munich .city-story{ background:#0B1420; }
 #scene-bangalore .city-story{ background:#1a0f08; }
 .city-story p{
-  font-family:var(--font-body); font-weight:400; text-align:left;
+  font-family:var(--font-body); font-weight:400; text-align:justify;
   font-size:clamp(1.0625rem, 1.6vw, 1.3125rem); line-height:1.75;
   color:rgba(248,246,242,.82);
   max-width:58ch; margin:0 auto;
@@ -746,9 +751,10 @@ body.reduced-motion .golden-haze{ animation:none; }
   font-size:clamp(.9375rem,1.7vw,1.25rem); color:var(--accent); margin:7vh 0 0;
 }
 .connection-countdown-date{
-  font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em;
-  text-transform:uppercase; color:var(--accent); margin:1.6rem 0 0;
-  text-shadow:0 1px 8px rgba(0,0,0,.65);
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(1.75rem, 4vw, 2.75rem); color:var(--gold);
+  margin:2.2rem 0 0;
+  text-shadow:0 2px 24px rgba(var(--gold-rgb),.3), 0 1px 8px rgba(0,0,0,.65);
 }
 /* the one section heading that names the day itself — gold rather than ivory,
    so it reads as the invitation's own title and not another scene caption */
