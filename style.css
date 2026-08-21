@@ -525,34 +525,49 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 /* ============================================================
    SCENE 3 / 4 — MUNICH & BANGALORE
    ============================================================ */
-/* svh is the *smallest* viewport (address bar shown) — right for the pinned
-   scenes above, where the box must never resize mid-scrub, but wrong here:
-   this scene isn't pinned, so once the bar retracts on scroll the real,
-   visible viewport grows past 100svh and this box stopped growing with it.
-   The gap that opened up below it exposed bare page background — the very
-   dark connection scene sitting right underneath — as a flat black band
-   across the bottom of the screen, with the fixed audio button floating in
-   it looking like it belonged to that next scene rather than this one. dvh
-   tracks the actual visible viewport continuously, so the box's bottom edge
-   always meets the real edge of the screen; nothing pinned relies on this
-   scene's height staying fixed, so there's no resize-jump risk in tracking it. */
-.city-scene{ height:100vh; position:relative; }
+/* each scene is now the photo (one fixed screen, exactly as designed) followed
+   by that city's own story, in normal flow beneath it — so the section's total
+   height is just whatever its content adds up to, and the old svh/dvh gap
+   workaround this used to need (a *fixed*-height box falling short of the real
+   mobile viewport once the address bar retracts) no longer applies: there's no
+   gap to open, because .city-story's solid background carries on directly
+   underneath at whatever height the photo actually rendered at. */
+.city-scene{ position:relative; }
+.city-photo{ position:relative; height:100vh; overflow:hidden; }
 .city-sky{ position:absolute; inset:0; }
 /* the color wash sits on top of the photo as a semi-transparent tint (keeps
-   captions legible and the mood consistent); the solid gradient underneath
-   is the fallback shown if the photo file isn't present yet */
+   captions legible and the mood consistent) and now closes to fully solid —
+   in the same base colour .city-story below is filled with — right at the
+   bottom edge, so the photo hands off to the story with no visible seam.
+   The solid gradient underneath the photo url() is the fallback shown if the
+   image file isn't present yet. */
 #scene-munich .city-sky{
   background:
-    linear-gradient(180deg, rgba(11,20,32,.72) 0%, rgba(20,34,54,.55) 45%, rgba(38,64,92,.4) 100%),
+    linear-gradient(180deg, rgba(11,20,32,.72) 0%, rgba(20,34,54,.55) 45%, rgba(38,64,92,.4) 80%, rgba(11,20,32,1) 100%),
     url('munichline.jpg') center/cover no-repeat,
     linear-gradient(180deg,#0B1420 0%, #142236 45%, #26405c 100%);
 }
 #scene-bangalore .city-sky{
   background:
-    linear-gradient(180deg, rgba(26,15,8,.72) 0%, rgba(58,29,15,.55) 45%, rgba(122,66,24,.4) 100%),
+    linear-gradient(180deg, rgba(26,15,8,.72) 0%, rgba(58,29,15,.55) 45%, rgba(122,66,24,.4) 80%, rgba(26,15,8,1) 100%),
     url('bangalore_line.jpg') center/cover no-repeat,
     linear-gradient(180deg,#1a0f08 0%, #3a1d0f 45%, #7a4218 100%);
 }
+/* the story each city gets: a few short, spaced paragraphs on the same solid
+   dark the photo above closes to, wide enough to breathe but narrow enough
+   to actually read. Left-aligned rather than centered — several of these
+   paragraphs run long, and centered multi-line prose gets ragged fast,
+   especially on a narrow phone where every line wraps at least once. */
+.city-story{ padding:clamp(56px, 11vh, 112px) var(--scene-pad); }
+#scene-munich .city-story{ background:#0B1420; }
+#scene-bangalore .city-story{ background:#1a0f08; }
+.city-story p{
+  font-family:var(--font-body); font-weight:400; text-align:left;
+  font-size:clamp(1.0625rem, 1.6vw, 1.3125rem); line-height:1.75;
+  color:rgba(248,246,242,.82);
+  max-width:58ch; margin:0 auto;
+}
+.city-story p + p{ margin-top:1.4em; }
 .city-glow{ position:absolute; inset:0; mix-blend-mode:screen; pointer-events:none; }
 .city-clouds{ position:absolute; inset:0; opacity:.55; mix-blend-mode:screen; pointer-events:none; }
 .city-birds{ position:absolute; inset:0; pointer-events:none; }
@@ -869,9 +884,6 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
 
   #scene-munich .city-content{ top:24%; }
   #scene-bangalore .city-content{ top:26%; left:0; max-width:none; }
-  #scene-bangalore .city-content .scene-caption,
-  #scene-bangalore .city-content .scene-subline{ text-align:left; }
-  .scene-subline{ max-width:38ch; }
 
   .ending-inner{ gap:4vh; }
   .ending-lines{ gap:10px; }
@@ -1027,7 +1039,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
 @media (max-aspect-ratio: 4/5){
   #scene-munich .city-sky{
     background:
-      linear-gradient(180deg, rgba(11,20,32,.72) 0%, rgba(20,34,54,.55) 45%, rgba(38,64,92,.4) 100%),
+      linear-gradient(180deg, rgba(11,20,32,.72) 0%, rgba(20,34,54,.55) 45%, rgba(38,64,92,.4) 80%, rgba(11,20,32,1) 100%),
       linear-gradient(180deg, #f3f3f3 0%, #f4f4f4 2%, #f7f7f7 5%, #fbfbfb 10%,
                               #fff 19%, #fff 27%, rgba(255,255,255,0) 30.5%),
       url('munichline.jpg') center/cover no-repeat,
@@ -1035,7 +1047,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   }
   #scene-bangalore .city-sky{
     background:
-      linear-gradient(180deg, rgba(26,15,8,.72) 0%, rgba(58,29,15,.55) 45%, rgba(122,66,24,.4) 100%),
+      linear-gradient(180deg, rgba(26,15,8,.72) 0%, rgba(58,29,15,.55) 45%, rgba(122,66,24,.4) 80%, rgba(26,15,8,1) 100%),
       linear-gradient(180deg, #f3f3f3 0%, #f4f4f4 2%, #f7f7f7 5%, #fbfbfb 10%,
                               #fff 19%, #fff 25.5%, rgba(255,255,255,0) 29.3%),
       url('bangalore_line.jpg') center/cover no-repeat,
@@ -1044,14 +1056,10 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
 
   .city-title{ display:block; width:max-content; max-width:100%; margin:0 auto 26px; }
 
-  /* one centred lockup per city now that the name is set rather than photographed
-     — Bangalore's off-centre desktop treatment leaves the subline auto-centred
-     under a flush-left caption on a narrow screen, which reads as a stray indent */
+  /* one centred lockup per city now that the name is set rather than photographed */
   #scene-munich .city-content,
   #scene-bangalore .city-content{
     top:10%; left:0; right:auto; width:100%; max-width:none;
     padding:0 var(--scene-pad); text-align:center;
   }
-  #scene-bangalore .city-content .scene-caption,
-  #scene-bangalore .city-content .scene-subline{ text-align:center; }
 }
