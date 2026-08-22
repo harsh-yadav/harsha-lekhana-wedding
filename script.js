@@ -941,7 +941,18 @@ const EarthScene = (function(){
        black". preventDefault on contextlost is required for the browser to
        fire contextrestored at all. */
     const c = document.getElementById('earthCanvas');
-    c.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); }, false);
+    c.addEventListener('webglcontextlost', e => {
+      e.preventDefault();
+      stop();
+      /* most browsers fire contextrestored on their own shortly after, but
+         it isn't guaranteed on every GPU/driver — if nothing's come back
+         after a few seconds, a full reload is the only way left to recover
+         rather than leaving the visitor stuck on a blank scene. */
+      setTimeout(()=>{
+        const g = c.getContext('webgl') || c.getContext('webgl2');
+        if(g && g.isContextLost()) location.reload();
+      }, 4000);
+    }, false);
     c.addEventListener('webglcontextrestored', () => {
       build();
       if(document.visibilityState === 'visible') start();
