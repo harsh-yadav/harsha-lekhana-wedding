@@ -2162,17 +2162,8 @@ function setupPinnedScenes(){
        next scene instead of leaving the visitor sitting in a pinned,
        no-longer-changing frame with no obvious way to continue. */
     const earthAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:11100 });
-    /* this scene is pinned for a long scroll distance, so "is the scene
-       active" (used for every other scene's cue) would leave this one
-       showing the whole time — fade it out as soon as scrolling begins
-       instead, same as a cue that's already done its job. */
-    const earthCue = document.getElementById('earthScrollCue');
     ScrollTrigger.create(Object.assign({ trigger:'#scene-earth', pin:'#scene-earth .pin-wrap' }, pinCfg, {
-      onUpdate:self => {
-        earthAutoplay.setSelf(self);
-        EarthScene.update(self.progress);
-        if(earthCue) earthCue.classList.toggle('is-visible', self.progress < 0.06);
-      },
+      onUpdate:self => { earthAutoplay.setSelf(self); EarthScene.update(self.progress); },
       onEnter: earthAutoplay.onEnter,
       onEnterBack: earthAutoplay.onEnterBack,
       onLeave: earthAutoplay.onLeave,
@@ -2185,13 +2176,11 @@ function setupPinnedScenes(){
        changing and no cue that scrolling further would reveal the
        countdown and release them into the next scene. */
     const connectionCountdown = document.getElementById('scene-countdown');
-    const connectionCue = document.getElementById('connectionScrollCue');
     const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800 });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
         connectionAutoplay.setSelf(self);
         ConnectionScene.update(self.progress);
-        if(connectionCue) connectionCue.classList.toggle('is-visible', self.progress < 0.04);
         if(connectionCountdown){
           const t = clamp01((self.progress - 0.965) / 0.035);
           connectionCountdown.style.opacity = String(t);
@@ -2243,19 +2232,10 @@ function setupProgressAndNav(){
     trigger:'main', start:'top top', end:'bottom bottom',
     onUpdate:self => { document.getElementById('progressFill').style.width = (self.progress*100)+'%'; }
   });
-  /* the globe and connection scenes' own cues are driven by scrub progress
-     in setupPinnedScenes instead (they're pinned for a long scroll distance,
-     so "is this scene active" would leave them showing the whole time) —
-     this covers every other cinematic scene, where nothing else hints that
-     there's more below. */
   scenes.forEach((sc,i)=>{
-    const cue = sc.querySelector(':scope > .scroll-hint, :scope > .city-photo > .scroll-hint');
     ScrollTrigger.create({
       trigger:sc, start:'top center', end:'bottom center',
-      onToggle:self => {
-        if(self.isActive){ dots.forEach(d=>d.classList.remove('is-active')); dots[i].classList.add('is-active'); }
-        if(cue) cue.classList.toggle('is-visible', self.isActive);
-      }
+      onToggle:self => { if(self.isActive){ dots.forEach(d=>d.classList.remove('is-active')); dots[i].classList.add('is-active'); } }
     });
   });
 }
@@ -2387,6 +2367,11 @@ function initMusicGate(){
   const halo   = sat.querySelector('.gs-halo');
   const ripple = sat.querySelector('.gs-ripple');
   const cue    = document.getElementById('gateScrollCue');
+  const cueLabel = cue ? cue.querySelector('.scroll-hint-label') : null;
+  /* the cue opens by naming the quiet default, since sound is still off at that
+     point — once music is actually switched on there is nothing quiet left to
+     mention, so the text drops back to just the instruction */
+  const cueToMusicOn = ()=>{ if(cueLabel) cueLabel.textContent = 'Scroll to continue.'; };
 
   const S = { INTRO:'intro', PROMPT:'prompt', DISSOLVE:'dissolve', DOCKING:'docking', READY:'ready' };
   let state = S.INTRO;
@@ -2549,6 +2534,11 @@ function initMusicGate(){
       /* forwarding the real gesture, so the browser still counts this as the
          interaction that unblocks playback — then the craft flares and goes */
       btn.click();
+      /* fired here, not at the end of the multi-second docking timeline below —
+         music starts the instant this tap lands, so the cue needs to stop
+         calling it a "quiet experience" in that same instant, not several
+         seconds later once the craft has finished crossing the screen */
+      cueToMusicOn();
       pulse(1.35);
       gsap.delayedCall(.3, ()=> transform(true));
     }
