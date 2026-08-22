@@ -543,6 +543,15 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   margin:0; opacity:1;
   font-size:clamp(2rem, 5vw, 3.25rem); letter-spacing:.14em;
 }
+/* this scene grows taller than one viewport once the photo and heading are
+   both in flow (min-height, not a fixed height, unlike the other scenes a
+   scroll-hint sits in) — an absolutely-positioned cue pinned to the bottom
+   of that taller box lands mid-content instead of past it. As a normal flex
+   item here it just takes its place after the heading, so it can't overlap
+   anything regardless of how tall the photo makes the scene. */
+.person-scene .scroll-hint{
+  position:relative; bottom:auto; left:auto; transform:none; margin-top:4px;
+}
 .person-photo-frame{ display:flex; justify-content:center; }
 .person-photo{
   display:block;
