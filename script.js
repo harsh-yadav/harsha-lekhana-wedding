@@ -2141,6 +2141,46 @@ function setupPinnedScenes(){
       onLeaveBack: earthAutoplay.onLeaveBack
     }));
 
+    /* once the visitor is released from the pinned story-beats scene, the
+       plain scroll-reveal scenes after it (save-the-date poster, closing)
+       have nothing driving them forward — the countdown appears and then
+       the page just sits there. Continue the same gentle autoplay through
+       ordinary document scroll, right to the very end, with the same
+       pause-on-input / resume-from-where-they-left-off behaviour. */
+    function setupTailAutoplay(){
+      const PIXELS_PER_SECOND = 220;
+      const RESUME_DELAY = 1400;
+      let active = false, raf = null, resumeTimer = null;
+      function maxY(){ return Math.max(0, document.documentElement.scrollHeight - window.innerHeight); }
+      function stopRaf(){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
+      function clearResumeTimer(){ if(resumeTimer){ clearTimeout(resumeTimer); resumeTimer = null; } }
+      function run(){
+        if(!active) return;
+        const target = maxY();
+        const startY = window.scrollY;
+        if(startY >= target - 2){ active = false; return; }
+        const startTime = performance.now();
+        const step = now => {
+          const y = Math.min(target, startY + (now - startTime) * PIXELS_PER_SECOND / 1000);
+          if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
+          else { window.scrollTo(0, y); }
+          if(y >= target){ raf = null; active = false; return; }
+          raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+      }
+      function pause(){
+        stopRaf();
+        clearResumeTimer();
+        if(!active) return;
+        resumeTimer = setTimeout(run, RESUME_DELAY);
+      }
+      ['wheel','touchstart','keydown','pointerdown'].forEach(evt =>
+        window.addEventListener(evt, pause, { passive:true }));
+      return { start(){ active = true; run(); } };
+    }
+    const tailAutoplay = setupTailAutoplay();
+
     /* target is 1, not 0.9 — the countdown itself only starts fading in at
        progress 0.965 (see below), so stopping autoplay at 0.9 used to leave
        visitors stuck mid-pin after the last beat with nothing on screen
@@ -2160,7 +2200,7 @@ function setupPinnedScenes(){
       },
       onEnter: connectionAutoplay.onEnter,
       onEnterBack: connectionAutoplay.onEnterBack,
-      onLeave: connectionAutoplay.onLeave,
+      onLeave: () => { connectionAutoplay.onLeave(); tailAutoplay.start(); },
       onLeaveBack: connectionAutoplay.onLeaveBack
     }));
     /* the poster now sits in the flow of the details block and reveals with
