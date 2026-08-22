@@ -2087,23 +2087,54 @@ function setupPinnedScenes(){
     const connectionCountdown = document.getElementById('scene-countdown');
 
     /* guests found the manual scroll-scrub pace of the story beats too easy
-       to miss entirely, so on first arrival it gently auto-scrolls through
-       them like a short film — one beat at a time, right up to the
-       countdown. Any real scroll/touch/key/tap is treated as the visitor
-       taking the wheel themselves: autoplay cancels instantly and never
-       comes back for the rest of the visit, so it can never fight a
-       deliberate scroll. */
+       to miss entirely, so it auto-plays through them like a short film
+       whenever the visitor isn't actively scrolling — starting on arrival,
+       pausing the instant a real scroll/touch/key/tap takes over, and
+       quietly picking back up from wherever they left off once input goes
+       idle again, right up to the countdown. It never fights a deliberate
+       scroll — it only ever moves during the gaps between them. */
+    const AUTOPLAY_TARGET = 0.9; // matches the "beats settled" resting point used elsewhere below
+    const AUTOPLAY_RATE_MS = 16000 / AUTOPLAY_TARGET; // ~2s/beat pace, scaled to resume from any point
+    const AUTOPLAY_RESUME_DELAY = 1400; // ms of no input before autoplay picks back up
+    let connectionSelfRef = null;
+    let connectionSceneActive = false;
     let connectionAutoplayRaf = null;
-    let connectionAutoplayDone = false;
-    function cancelConnectionAutoplay(){
-      connectionAutoplayDone = true;
+    let connectionAutoplayResumeTimer = null;
+
+    function stopConnectionAutoplayRaf(){
       if(connectionAutoplayRaf){ cancelAnimationFrame(connectionAutoplayRaf); connectionAutoplayRaf = null; }
     }
+    function clearConnectionResumeTimer(){
+      if(connectionAutoplayResumeTimer){ clearTimeout(connectionAutoplayResumeTimer); connectionAutoplayResumeTimer = null; }
+    }
+    function runConnectionAutoplay(){
+      const self = connectionSelfRef;
+      if(!self || !connectionSceneActive) return;
+      const startProgress = self.progress;
+      if(startProgress >= AUTOPLAY_TARGET) return;
+      const startTime = performance.now();
+      const step = now => {
+        const p = Math.min(AUTOPLAY_TARGET, startProgress + (now - startTime) / AUTOPLAY_RATE_MS);
+        const y = self.start + (self.end - self.start) * p;
+        if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
+        else { window.scrollTo(0, y); }
+        if(p >= AUTOPLAY_TARGET){ connectionAutoplayRaf = null; return; }
+        connectionAutoplayRaf = requestAnimationFrame(step);
+      };
+      connectionAutoplayRaf = requestAnimationFrame(step);
+    }
+    function pauseConnectionAutoplay(){
+      stopConnectionAutoplayRaf();
+      clearConnectionResumeTimer();
+      if(!connectionSceneActive) return;
+      connectionAutoplayResumeTimer = setTimeout(runConnectionAutoplay, AUTOPLAY_RESUME_DELAY);
+    }
     ['wheel','touchstart','keydown','pointerdown'].forEach(evt =>
-      window.addEventListener(evt, cancelConnectionAutoplay, { passive:true }));
+      window.addEventListener(evt, pauseConnectionAutoplay, { passive:true }));
 
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
+        connectionSelfRef = self;
         ConnectionScene.update(self.progress);
         if(connectionCountdown){
           const t = clamp01((self.progress - 0.965) / 0.035);
@@ -2111,26 +2142,10 @@ function setupPinnedScenes(){
           connectionCountdown.style.pointerEvents = t > 0.5 ? 'auto' : 'none';
         }
       },
-      onEnter: self => {
-        if(connectionAutoplayDone) return;
-        const AUTOPLAY_TARGET = 0.9; // matches the "beats settled" resting point used elsewhere below
-        const DURATION_MS = 16000;   // ~2s per beat across the eight story beats
-        const startProgress = self.progress;
-        if(startProgress >= AUTOPLAY_TARGET){ connectionAutoplayDone = true; return; }
-        const startTime = performance.now();
-        const step = now => {
-          if(connectionAutoplayDone) return;
-          const elapsed = now - startTime;
-          const p = Math.min(AUTOPLAY_TARGET, startProgress + (elapsed/DURATION_MS) * (AUTOPLAY_TARGET - startProgress));
-          const y = self.start + (self.end - self.start) * p;
-          if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
-          else { window.scrollTo(0, y); }
-          if(p >= AUTOPLAY_TARGET){ connectionAutoplayDone = true; return; }
-          connectionAutoplayRaf = requestAnimationFrame(step);
-        };
-        connectionAutoplayRaf = requestAnimationFrame(step);
-      },
-      onLeaveBack: cancelConnectionAutoplay
+      onEnter: self => { connectionSelfRef = self; connectionSceneActive = true; runConnectionAutoplay(); },
+      onEnterBack: self => { connectionSelfRef = self; connectionSceneActive = true; runConnectionAutoplay(); },
+      onLeave: () => { connectionSceneActive = false; stopConnectionAutoplayRaf(); clearConnectionResumeTimer(); },
+      onLeaveBack: () => { connectionSceneActive = false; stopConnectionAutoplayRaf(); clearConnectionResumeTimer(); }
     }));
     /* the poster now sits in the flow of the details block and reveals with
        the ordinary .will-reveal pass (see setupReveals) — it no longer needs
