@@ -2101,7 +2101,7 @@ function setupPinnedScenes(){
        they left off (not from the top) once input goes idle again. It never
        fights a deliberate scroll — it only ever moves in the gaps between
        them. Used below for both the globe and the story-beats scene. */
-    function setupSceneAutoplay({ target, totalDurationMs, resumeDelayMs = 1400, onComplete }){
+    function setupSceneAutoplay({ target, totalDurationMs, resumeDelayMs = 1400 }){
       const rateMs = totalDurationMs / target;
       let selfRef = null, active = false, raf = null, resumeTimer = null;
       function stopRaf(){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
@@ -2122,7 +2122,7 @@ function setupPinnedScenes(){
           const y = self.start + (self.end - self.start) * (p + overshoot);
           if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
           else { window.scrollTo(0, y); }
-          if(p >= target){ raf = null; if(onComplete) onComplete(); return; }
+          if(p >= target){ raf = null; return; }
           raf = requestAnimationFrame(step);
         };
         raf = requestAnimationFrame(step);
@@ -2159,53 +2159,13 @@ function setupPinnedScenes(){
       onLeaveBack: earthAutoplay.onLeaveBack
     }));
 
-    /* once the visitor is released from the pinned story-beats scene, the
-       plain scroll-reveal scenes after it (save-the-date poster, closing)
-       have nothing driving them forward — the countdown appears and then
-       the page just sits there. Continue the same gentle autoplay through
-       ordinary document scroll, right to the very end, with the same
-       pause-on-input / resume-from-where-they-left-off behaviour. */
-    function setupTailAutoplay(){
-      const PIXELS_PER_SECOND = 220;
-      const RESUME_DELAY = 1400;
-      let active = false, raf = null, resumeTimer = null;
-      function maxY(){ return Math.max(0, document.documentElement.scrollHeight - window.innerHeight); }
-      function stopRaf(){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
-      function clearResumeTimer(){ if(resumeTimer){ clearTimeout(resumeTimer); resumeTimer = null; } }
-      function run(){
-        if(!active) return;
-        const target = maxY();
-        const startY = window.scrollY;
-        if(startY >= target - 2){ active = false; return; }
-        const startTime = performance.now();
-        const step = now => {
-          const y = Math.min(target, startY + (now - startTime) * PIXELS_PER_SECOND / 1000);
-          if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
-          else { window.scrollTo(0, y); }
-          if(y >= target){ raf = null; active = false; return; }
-          raf = requestAnimationFrame(step);
-        };
-        raf = requestAnimationFrame(step);
-      }
-      function pause(){
-        stopRaf();
-        clearResumeTimer();
-        if(!active) return;
-        resumeTimer = setTimeout(run, RESUME_DELAY);
-      }
-      ['wheel','touchstart','keydown','pointerdown'].forEach(evt =>
-        window.addEventListener(evt, pause, { passive:true }));
-      return { start(){ if(active) return; active = true; run(); } };
-    }
-    const tailAutoplay = setupTailAutoplay();
-
     /* target is 1, not 0.9 — the countdown itself only starts fading in at
        progress 0.965 (see below), so stopping autoplay at 0.9 used to leave
        visitors stuck mid-pin after the last beat with nothing on screen
        changing and no cue that scrolling further would reveal the
        countdown and release them into the next scene. */
     const connectionCountdown = document.getElementById('scene-countdown');
-    const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800, onComplete: () => tailAutoplay.start() });
+    const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800 });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
         connectionAutoplay.setSelf(self);
@@ -2218,7 +2178,7 @@ function setupPinnedScenes(){
       },
       onEnter: connectionAutoplay.onEnter,
       onEnterBack: connectionAutoplay.onEnterBack,
-      onLeave: () => { connectionAutoplay.onLeave(); tailAutoplay.start(); },
+      onLeave: connectionAutoplay.onLeave,
       onLeaveBack: connectionAutoplay.onLeaveBack
     }));
     /* the poster now sits in the flow of the details block and reveals with
@@ -2963,6 +2923,18 @@ document.addEventListener('DOMContentLoaded', function(){
   window.addEventListener('orientationchange', ()=>{
     setTimeout(()=> ScrollTrigger.refresh(), 350);
   }, { passive:true });
+  /* a phone's screen timing out and waking back up doesn't fire resize or
+     orientationchange, but mobile browsers routinely come back from it with
+     a slightly different viewport (address bar state, sometimes a stale
+     browser-chrome inset) — same class of problem as rotation. Without a
+     refresh here every pinned scene keeps measuring itself against the
+     geometry from before the screen went to sleep, and a visitor arriving
+     mid-pin can end up scrolled into the gap between a stale pin-spacer and
+     the real content: nothing rendered in view, which reads as the whole
+     page going black over the near-black background. */
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') setTimeout(()=> ScrollTrigger.refresh(), 100);
+  });
 });
 
 })();
