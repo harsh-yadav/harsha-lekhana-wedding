@@ -2081,60 +2081,69 @@ function setupPinnedScenes(){
   const pinCfg = { start:'top top', end:'bottom bottom', scrub: REDUCED_MOTION ? false : 1 };
 
   if(!REDUCED_MOTION){
-    ScrollTrigger.create(Object.assign({ trigger:'#scene-earth', pin:'#scene-earth .pin-wrap' }, pinCfg, {
-      onUpdate:self => EarthScene.update(self.progress)
-    }));
-    const connectionCountdown = document.getElementById('scene-countdown');
-
-    /* guests found the manual scroll-scrub pace of the story beats too easy
-       to miss entirely, so it auto-plays through them like a short film
-       whenever the visitor isn't actively scrolling — starting on arrival,
-       pausing the instant a real scroll/touch/key/tap takes over, and
-       quietly picking back up from wherever they left off once input goes
-       idle again, right up to the countdown. It never fights a deliberate
-       scroll — it only ever moves during the gaps between them. */
-    const AUTOPLAY_TARGET = 0.9; // matches the "beats settled" resting point used elsewhere below
-    const AUTOPLAY_RATE_MS = 16000 / AUTOPLAY_TARGET; // ~2s/beat pace, scaled to resume from any point
-    const AUTOPLAY_RESUME_DELAY = 1400; // ms of no input before autoplay picks back up
-    let connectionSelfRef = null;
-    let connectionSceneActive = false;
-    let connectionAutoplayRaf = null;
-    let connectionAutoplayResumeTimer = null;
-
-    function stopConnectionAutoplayRaf(){
-      if(connectionAutoplayRaf){ cancelAnimationFrame(connectionAutoplayRaf); connectionAutoplayRaf = null; }
-    }
-    function clearConnectionResumeTimer(){
-      if(connectionAutoplayResumeTimer){ clearTimeout(connectionAutoplayResumeTimer); connectionAutoplayResumeTimer = null; }
-    }
-    function runConnectionAutoplay(){
-      const self = connectionSelfRef;
-      if(!self || !connectionSceneActive) return;
-      const startProgress = self.progress;
-      if(startProgress >= AUTOPLAY_TARGET) return;
-      const startTime = performance.now();
-      const step = now => {
-        const p = Math.min(AUTOPLAY_TARGET, startProgress + (now - startTime) / AUTOPLAY_RATE_MS);
-        const y = self.start + (self.end - self.start) * p;
-        if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
-        else { window.scrollTo(0, y); }
-        if(p >= AUTOPLAY_TARGET){ connectionAutoplayRaf = null; return; }
-        connectionAutoplayRaf = requestAnimationFrame(step);
+    /* shared machinery: on first arrival at a pinned, scroll-scrubbed scene,
+       gently auto-scroll through it like a short film, whenever the visitor
+       isn't actively driving the scroll themselves. Pausing is instant on
+       any real scroll/touch/key/tap, and it picks back up from wherever
+       they left off (not from the top) once input goes idle again. It never
+       fights a deliberate scroll — it only ever moves in the gaps between
+       them. Used below for both the globe and the story-beats scene. */
+    function setupSceneAutoplay({ target, totalDurationMs, resumeDelayMs = 1400 }){
+      const rateMs = totalDurationMs / target;
+      let selfRef = null, active = false, raf = null, resumeTimer = null;
+      function stopRaf(){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
+      function clearResumeTimer(){ if(resumeTimer){ clearTimeout(resumeTimer); resumeTimer = null; } }
+      function run(){
+        const self = selfRef;
+        if(!self || !active) return;
+        const startProgress = self.progress;
+        if(startProgress >= target) return;
+        const startTime = performance.now();
+        const step = now => {
+          const p = Math.min(target, startProgress + (now - startTime) / rateMs);
+          const y = self.start + (self.end - self.start) * p;
+          if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
+          else { window.scrollTo(0, y); }
+          if(p >= target){ raf = null; return; }
+          raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+      }
+      function pause(){
+        stopRaf();
+        clearResumeTimer();
+        if(!active) return;
+        resumeTimer = setTimeout(run, resumeDelayMs);
+      }
+      ['wheel','touchstart','keydown','pointerdown'].forEach(evt =>
+        window.addEventListener(evt, pause, { passive:true }));
+      return {
+        setSelf(self){ selfRef = self; },
+        onEnter(self){ selfRef = self; active = true; run(); },
+        onEnterBack(self){ selfRef = self; active = true; run(); },
+        onLeave(){ active = false; stopRaf(); clearResumeTimer(); },
+        onLeaveBack(){ active = false; stopRaf(); clearResumeTimer(); }
       };
-      connectionAutoplayRaf = requestAnimationFrame(step);
     }
-    function pauseConnectionAutoplay(){
-      stopConnectionAutoplayRaf();
-      clearConnectionResumeTimer();
-      if(!connectionSceneActive) return;
-      connectionAutoplayResumeTimer = setTimeout(runConnectionAutoplay, AUTOPLAY_RESUME_DELAY);
-    }
-    ['wheel','touchstart','keydown','pointerdown'].forEach(evt =>
-      window.addEventListener(evt, pauseConnectionAutoplay, { passive:true }));
 
+    /* the globe is one continuous camera push-in rather than discrete dated
+       beats, so its pace is picked by feel — a shorter, single sweep rather
+       than a multi-beat story. 0.9 matches the "settled" resting frame the
+       reduced-motion fallback below already uses. */
+    const earthAutoplay = setupSceneAutoplay({ target:0.9, totalDurationMs:10000 });
+    ScrollTrigger.create(Object.assign({ trigger:'#scene-earth', pin:'#scene-earth .pin-wrap' }, pinCfg, {
+      onUpdate:self => { earthAutoplay.setSelf(self); EarthScene.update(self.progress); },
+      onEnter: earthAutoplay.onEnter,
+      onEnterBack: earthAutoplay.onEnterBack,
+      onLeave: earthAutoplay.onLeave,
+      onLeaveBack: earthAutoplay.onLeaveBack
+    }));
+
+    const connectionCountdown = document.getElementById('scene-countdown');
+    const connectionAutoplay = setupSceneAutoplay({ target:0.9, totalDurationMs:16000 });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
-        connectionSelfRef = self;
+        connectionAutoplay.setSelf(self);
         ConnectionScene.update(self.progress);
         if(connectionCountdown){
           const t = clamp01((self.progress - 0.965) / 0.035);
@@ -2142,10 +2151,10 @@ function setupPinnedScenes(){
           connectionCountdown.style.pointerEvents = t > 0.5 ? 'auto' : 'none';
         }
       },
-      onEnter: self => { connectionSelfRef = self; connectionSceneActive = true; runConnectionAutoplay(); },
-      onEnterBack: self => { connectionSelfRef = self; connectionSceneActive = true; runConnectionAutoplay(); },
-      onLeave: () => { connectionSceneActive = false; stopConnectionAutoplayRaf(); clearConnectionResumeTimer(); },
-      onLeaveBack: () => { connectionSceneActive = false; stopConnectionAutoplayRaf(); clearConnectionResumeTimer(); }
+      onEnter: connectionAutoplay.onEnter,
+      onEnterBack: connectionAutoplay.onEnterBack,
+      onLeave: connectionAutoplay.onLeave,
+      onLeaveBack: connectionAutoplay.onLeaveBack
     }));
     /* the poster now sits in the flow of the details block and reveals with
        the ordinary .will-reveal pass (see setupReveals) — it no longer needs
