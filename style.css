@@ -756,6 +756,25 @@ body.reduced-motion .golden-haze{ animation:none; }
   margin:2.2rem 0 0;
   text-shadow:0 2px 24px rgba(var(--gold-rgb),.3), 0 1px 8px rgba(0,0,0,.65);
 }
+/* a quiet nudge once the countdown itself has settled in — small and low-
+   opacity on purpose, not the full gate/opening treatment (no label, no
+   trail, no particle), so it doesn't compete with the date above it */
+.countdown-scroll-hint{
+  position:absolute; bottom:32px; left:50%; transform:translateX(-50%);
+  z-index:6; opacity:0; transition:opacity 1s var(--ease-out);
+  pointer-events:none;
+}
+.countdown-scroll-hint.is-visible{ opacity:.5; }
+.countdown-scroll-hint svg{
+  display:block; width:18px; height:18px;
+  fill:none; stroke:var(--gold); stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round;
+  animation:countdownChevronBounce 1.8s ease-in-out infinite;
+}
+@keyframes countdownChevronBounce{
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(4px); }
+}
 /* the one section heading that names the day itself — gold rather than ivory,
    so it reads as the invitation's own title and not another scene caption */
 .details-block > .scene-caption{ color:var(--gold); }

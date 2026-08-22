@@ -2176,6 +2176,7 @@ function setupPinnedScenes(){
        changing and no cue that scrolling further would reveal the
        countdown and release them into the next scene. */
     const connectionCountdown = document.getElementById('scene-countdown');
+    const countdownCue = document.getElementById('countdownScrollCue');
     const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800 });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
@@ -2185,6 +2186,9 @@ function setupPinnedScenes(){
           const t = clamp01((self.progress - 0.965) / 0.035);
           connectionCountdown.style.opacity = String(t);
           connectionCountdown.style.pointerEvents = t > 0.5 ? 'auto' : 'none';
+          /* only once the countdown has essentially finished revealing —
+             not while it's still fading in */
+          if(countdownCue) countdownCue.classList.toggle('is-visible', t > 0.9);
         }
       },
       onEnter: connectionAutoplay.onEnter,
@@ -2205,6 +2209,8 @@ function setupPinnedScenes(){
     document.getElementById('connectionCaption').style.transform = 'none';
     const connectionCountdown = document.getElementById('scene-countdown');
     if(connectionCountdown){ connectionCountdown.style.opacity = 1; connectionCountdown.style.pointerEvents = 'auto'; }
+    const countdownCue = document.getElementById('countdownScrollCue');
+    if(countdownCue) countdownCue.classList.add('is-visible');
   }
 }
 
