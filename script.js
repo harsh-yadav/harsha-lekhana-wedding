@@ -933,6 +933,19 @@ const EarthScene = (function(){
       fbInit();
       return;
     }
+    /* mobile screens routinely lose their WebGL context outright after the
+       display times out and wakes back up (not just pausing — the GPU
+       resources are gone). Without rebuilding, the globe renders nothing
+       from then on: a permanently black frame sitting over the rest of the
+       page's near-black background, easily read as "the screen went
+       black". preventDefault on contextlost is required for the browser to
+       fire contextrestored at all. */
+    const c = document.getElementById('earthCanvas');
+    c.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); }, false);
+    c.addEventListener('webglcontextrestored', () => {
+      build();
+      if(document.visibilityState === 'visible') start();
+    }, false);
     build();
   }
   document.addEventListener('visibilitychange', ()=>{
@@ -2088,7 +2101,7 @@ function setupPinnedScenes(){
        they left off (not from the top) once input goes idle again. It never
        fights a deliberate scroll — it only ever moves in the gaps between
        them. Used below for both the globe and the story-beats scene. */
-    function setupSceneAutoplay({ target, totalDurationMs, resumeDelayMs = 1400 }){
+    function setupSceneAutoplay({ target, totalDurationMs, resumeDelayMs = 1400, onComplete }){
       const rateMs = totalDurationMs / target;
       let selfRef = null, active = false, raf = null, resumeTimer = null;
       function stopRaf(){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
@@ -2101,10 +2114,15 @@ function setupPinnedScenes(){
         const startTime = performance.now();
         const step = now => {
           const p = Math.min(target, startProgress + (now - startTime) / rateMs);
-          const y = self.start + (self.end - self.start) * p;
+          /* land a hair past the trigger's own end (not just exactly on it) —
+             ScrollTrigger's pin only actually releases, and onLeave only
+             fires, once the raw scroll position crosses past it, and
+             self.progress itself stays correctly clamped to 1 either way. */
+          const overshoot = p >= target ? 0.01 : 0;
+          const y = self.start + (self.end - self.start) * (p + overshoot);
           if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
           else { window.scrollTo(0, y); }
-          if(p >= target){ raf = null; return; }
+          if(p >= target){ raf = null; if(onComplete) onComplete(); return; }
           raf = requestAnimationFrame(step);
         };
         raf = requestAnimationFrame(step);
@@ -2177,7 +2195,7 @@ function setupPinnedScenes(){
       }
       ['wheel','touchstart','keydown','pointerdown'].forEach(evt =>
         window.addEventListener(evt, pause, { passive:true }));
-      return { start(){ active = true; run(); } };
+      return { start(){ if(active) return; active = true; run(); } };
     }
     const tailAutoplay = setupTailAutoplay();
 
@@ -2187,7 +2205,7 @@ function setupPinnedScenes(){
        changing and no cue that scrolling further would reveal the
        countdown and release them into the next scene. */
     const connectionCountdown = document.getElementById('scene-countdown');
-    const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800 });
+    const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800, onComplete: () => tailAutoplay.start() });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
         connectionAutoplay.setSelf(self);
