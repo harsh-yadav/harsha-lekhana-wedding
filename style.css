@@ -764,11 +764,12 @@ body.reduced-motion .golden-haze{ animation:none; }
   z-index:6; opacity:0; transition:opacity 1s var(--ease-out);
   pointer-events:none;
 }
-.countdown-scroll-hint.is-visible{ opacity:.5; }
+.countdown-scroll-hint.is-visible{ opacity:.8; }
 .countdown-scroll-hint svg{
-  display:block; width:18px; height:18px;
-  fill:none; stroke:var(--gold); stroke-width:2;
+  display:block; width:26px; height:26px;
+  fill:none; stroke:var(--gold); stroke-width:2.25;
   stroke-linecap:round; stroke-linejoin:round;
+  filter:drop-shadow(0 0 6px rgba(var(--gold-rgb),.6));
   animation:countdownChevronBounce 1.8s ease-in-out infinite;
 }
 @keyframes countdownChevronBounce{
