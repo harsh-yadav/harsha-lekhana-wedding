@@ -362,78 +362,27 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 }
 
 .scroll-hint{
-  position:absolute; bottom:52px; left:50%; transform:translateX(-50%);
-  width:2px; height:96px; z-index:6;
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+  z-index:6;
   opacity:0; transition:opacity 1.2s var(--ease-out);
-  /* purely decorative (aria-hidden) — its label can geometrically overlap
-     real controls on short viewports (see the gate's landscape-tablet fix
-     below), and without this a tap landing on the label's own box never
-     reaches whatever sits underneath it */
+  /* purely decorative (aria-hidden) */
   pointer-events:none;
 }
-.scroll-hint.is-visible{ opacity:.9; }
+.scroll-hint.is-visible{ opacity:.55; }
 /* once the music choice is behind them the light is the only thing left asking
-   to be followed, so it comes fully up */
-.scroll-hint.is-primed.is-visible{ opacity:1; }
-.scroll-hint-label{
-  position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
-  margin-bottom:14px; white-space:nowrap;
-  font-family:var(--font-body); font-weight:500;
-  font-size:clamp(.8125rem,1.1vw,.9375rem); letter-spacing:.28em; text-transform:uppercase;
-  color:rgba(248,246,242,.72);
-  animation:scrollLabelPulse 2.8s ease-in-out infinite;
-}
-@keyframes scrollLabelPulse{ 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
-/* the gate's own cue can carry a full sentence (while sound is still off)
-   rather than the two-to-four word lines every other scroll-hint uses — at
-   this letter-spacing, one nowrap line of it runs wider than a phone screen
-   and hangs off both edges. It wraps and centers on the same anchor point
-   instead, onto as many lines as it needs; the shorter cues elsewhere, and
-   this one's own shorter text once sound is on, are unaffected either way. */
-#gateScrollCue .scroll-hint-label{
-  white-space:normal; text-align:center; line-height:1.5;
-  width:max-content; max-width:min(80vw, 300px);
-}
-.scroll-hint-trail{
-  position:absolute; inset:0; border-radius:2px;
-  background:linear-gradient(180deg, transparent, rgba(var(--gold-rgb),.4) 50%, transparent 100%);
-  opacity:.55;
-}
-.scroll-hint-particle{
-  position:absolute; left:50%; top:0; width:6px; height:6px; margin-left:-3px; border-radius:50%;
-  background:var(--gold);
-  box-shadow:0 0 10px 3px rgba(var(--gold-rgb),.85), 0 -20px 22px -8px rgba(var(--gold-rgb),.55);
-  animation:scrollParticleFall 2.8s cubic-bezier(.45,0,.55,1) infinite;
-}
-@keyframes scrollParticleFall{
-  0%{ transform:translateY(0); opacity:0; }
-  12%{ opacity:1; }
-  85%{ opacity:1; }
-  100%{ transform:translateY(90px); opacity:0; }
-}
-/* the trail-and-particle reads as decoration before it reads as an instruction —
-   a guest has to already be looking for "scroll here" to recognize it as one. A
-   chevron is the one shape that doesn't need to be recognized as anything: it
-   just points. Sized to actually be seen rather than matched to the trail's own
-   thin, quiet scale — which is why it's set to overlap the trail's lower third
-   (top: calc(100% - 38px), well short of the trail's own top edge on every
-   breakpoint down to the shortest one at 52px tall) rather than stack below it:
-   only ~8px of its height plus the bounce peak ever needs to clear the trail's
-   own bottom edge before the scene's overflow:hidden would clip it, so one size
-   now fits every breakpoint instead of needing a cramped version for each —
-   verified with a few px of clearance to spare even in the tightest one,
-   the 561-720px-tall landscape-tablet gate. */
+   to be followed, so it comes up a little more */
+.scroll-hint.is-primed.is-visible{ opacity:.7; }
+/* small and quiet on purpose — a hint at the edge of notice, not a label
+   asking to be read */
 .scroll-hint-chevron{
-  position:absolute; top:calc(100% - 38px); left:50%;
-  width:46px; height:46px; transform:translateX(-50%);
-  fill:none; stroke:var(--gold); stroke-width:3.5;
+  display:block; width:20px; height:20px;
+  fill:none; stroke:var(--gold); stroke-width:2.25;
   stroke-linecap:round; stroke-linejoin:round;
-  filter:drop-shadow(0 0 10px rgba(var(--gold-rgb),.8));
-  animation:scrollChevronBounce 1.6s ease-in-out infinite;
+  animation:scrollChevronBounce 1.8s ease-in-out infinite;
 }
 @keyframes scrollChevronBounce{
-  0%,100%{ transform:translateX(-50%) translateY(0); opacity:.85; }
-  50%{ transform:translateX(-50%) translateY(7px); opacity:1; }
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(4px); }
 }
 /* full-screen wash used once, on the first scroll — the light the
    visitor follows from the opening into the rest of the story */
@@ -884,13 +833,10 @@ body.reduced-motion .golden-haze{ animation:none; }
 @media (prefers-reduced-motion: reduce){
   .scene-tall{ height:auto; min-height:100vh; }
   .pin-wrap{ position:relative; height:auto; min-height:100vh; padding:14vh 0; }
-  .scroll-hint-particle{ animation:none; opacity:.85; }
-  .scroll-hint-label{ animation:none; opacity:.85; }
   .scroll-hint-chevron{ animation:none; opacity:.85; }
 }
 body.reduced-motion .scene-tall{ height:auto; min-height:100vh; }
 body.reduced-motion .pin-wrap{ height:auto; min-height:100vh; padding:14vh 0; }
-body.reduced-motion .scroll-hint-label{ animation:none; }
 body.reduced-motion .scroll-hint-chevron{ animation:none; }
 
 /* generic reveal helpers (used by JS-driven GSAP + as reduced-motion fallback via CSS classes) */
@@ -945,13 +891,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .ending-inner{ gap:4vh; }
   .ending-lines{ gap:10px; }
 
-  .scroll-hint{ bottom:calc(38px + env(safe-area-inset-bottom)); height:72px; }
-  @keyframes scrollParticleFall{
-    0%{ transform:translateY(0); opacity:0; }
-    12%{ opacity:1; }
-    85%{ opacity:1; }
-    100%{ transform:translateY(66px); opacity:0; }
-  }
+  .scroll-hint{ bottom:calc(24px + env(safe-area-inset-bottom)); }
 
   .audio-toggle{
     bottom:calc(18px + env(safe-area-inset-bottom));
@@ -1035,7 +975,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .flip-card{ width:clamp(50px,9vh,72px); height:clamp(60px,11vh,88px); }
   .flip-face{ font-size:clamp(1.5rem,6vh,2.25rem); }
   .opening-greeting-text{ font-size:clamp(1.5rem,7vh,2.375rem); }
-  .scroll-hint{ height:52px; bottom:calc(22px + env(safe-area-inset-bottom)); }
+  .scroll-hint{ bottom:calc(18px + env(safe-area-inset-bottom)); }
   /* landscape crops the photos top and bottom instead of left and right, so the
      baked-in lockup stays whole and this stays the desktop treatment — but at
      ~400px of height Munich's caption was landing 15px inside the bottom of
@@ -1067,7 +1007,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
 @media (orientation:landscape) and (max-height:720px) and (min-height:561px){
   .gate-sat{ gap:clamp(24px, 6vh, 56px); }
   .gate-sat-svg{ width:clamp(160px, 30vh, 260px); }
-  #gateScrollCue{ height:56px; bottom:calc(20px + env(safe-area-inset-bottom)); }
+  #gateScrollCue{ bottom:calc(20px + env(safe-area-inset-bottom)); }
 }
 
 /* ---------- touch devices: real tap targets ----------

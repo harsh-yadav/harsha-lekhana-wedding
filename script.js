@@ -2376,11 +2376,6 @@ function initMusicGate(){
   const halo   = sat.querySelector('.gs-halo');
   const ripple = sat.querySelector('.gs-ripple');
   const cue    = document.getElementById('gateScrollCue');
-  const cueLabel = cue ? cue.querySelector('.scroll-hint-label') : null;
-  /* the cue opens by naming the quiet default, since sound is still off at that
-     point — once music is actually switched on there is nothing quiet left to
-     mention, so the text drops back to just the instruction */
-  const cueToMusicOn = ()=>{ if(cueLabel) cueLabel.textContent = 'Scroll to continue.'; };
 
   const S = { INTRO:'intro', PROMPT:'prompt', DISSOLVE:'dissolve', DOCKING:'docking', READY:'ready' };
   let state = S.INTRO;
@@ -2543,11 +2538,6 @@ function initMusicGate(){
       /* forwarding the real gesture, so the browser still counts this as the
          interaction that unblocks playback — then the craft flares and goes */
       btn.click();
-      /* fired here, not at the end of the multi-second docking timeline below —
-         music starts the instant this tap lands, so the cue needs to stop
-         calling it a "quiet experience" in that same instant, not several
-         seconds later once the craft has finished crossing the screen */
-      cueToMusicOn();
       pulse(1.35);
       gsap.delayedCall(.3, ()=> transform(true));
     }
