@@ -2128,9 +2128,11 @@ function setupPinnedScenes(){
 
     /* the globe is one continuous camera push-in rather than discrete dated
        beats, so its pace is picked by feel — a shorter, single sweep rather
-       than a multi-beat story. 0.9 matches the "settled" resting frame the
-       reduced-motion fallback below already uses. */
-    const earthAutoplay = setupSceneAutoplay({ target:0.9, totalDurationMs:10000 });
+       than a multi-beat story. Target is 1 (not 0.9, which stops short of
+       the pin actually releasing) so autoplay hands off cleanly into the
+       next scene instead of leaving the visitor sitting in a pinned,
+       no-longer-changing frame with no obvious way to continue. */
+    const earthAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:11100 });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-earth', pin:'#scene-earth .pin-wrap' }, pinCfg, {
       onUpdate:self => { earthAutoplay.setSelf(self); EarthScene.update(self.progress); },
       onEnter: earthAutoplay.onEnter,
@@ -2139,8 +2141,13 @@ function setupPinnedScenes(){
       onLeaveBack: earthAutoplay.onLeaveBack
     }));
 
+    /* target is 1, not 0.9 — the countdown itself only starts fading in at
+       progress 0.965 (see below), so stopping autoplay at 0.9 used to leave
+       visitors stuck mid-pin after the last beat with nothing on screen
+       changing and no cue that scrolling further would reveal the
+       countdown and release them into the next scene. */
     const connectionCountdown = document.getElementById('scene-countdown');
-    const connectionAutoplay = setupSceneAutoplay({ target:0.9, totalDurationMs:16000 });
+    const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800 });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
         connectionAutoplay.setSelf(self);
