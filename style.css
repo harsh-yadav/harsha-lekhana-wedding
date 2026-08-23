@@ -477,6 +477,12 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 .opening-greeting-text{
   font-family:var(--font-display); font-style:italic; font-weight:400;
   font-size:clamp(1.75rem, 4.6vw, 3.375rem); color:rgba(248,246,242,.95); margin:0 0 .5em;
+  /* "Good Afternoon [emoji]" — the longest of the four time-of-day
+     greetings — clears 320px with none to spare; balance is a no-op on
+     the single line every greeting sets today, and only matters if a
+     future greeting or a wider system-font substitution ever pushes it
+     to two lines, so it can't orphan the emoji alone. */
+  text-wrap:balance;
 }
 /* the small light sans read as interface copy sitting under a display line.
    Set as a title-card subtitle instead — the same gold small-caps the rest of
@@ -578,6 +584,7 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   font-size:clamp(.8125rem, 1.3vw, .9375rem); letter-spacing:.14em;
   text-transform:uppercase;
   color:var(--accent); margin:0; max-width:34ch; text-align:center;
+  text-wrap:balance;
 }
 
 /* ============================================================
@@ -706,6 +713,10 @@ body.reduced-motion .golden-haze{ animation:none; }
 .connection-caption-text{
   font-family:var(--font-display); font-weight:400; font-style:italic;
   font-size:clamp(1.25rem,3vw,2rem); line-height:1.35; color:var(--ivory); margin:0;
+  /* the longest beat ("Different skies. Different clocks. The story
+     continued.") was splitting 270px/121px on a narrow phone — a lopsided
+     break the other short-caption elements sitewide already guard against */
+  text-wrap:balance;
 }
 .connection-countdown{
   position:absolute; left:0; right:0; bottom:20%; z-index:6;
@@ -866,11 +877,15 @@ body.reduced-motion .golden-haze{ animation:none; }
 .ending-line{
   font-family:var(--font-display); font-style:italic; font-size:clamp(1.25rem,3vw,2rem);
   line-height:1.25; margin:0; opacity:0;
+  /* on a narrow phone this sentence runs to three lines and the last one
+     was orphaning a single short word — same fix as the other short-form
+     lines in this scene */
+  text-wrap:balance;
 }
 .ending-distance{
   font-family:var(--font-mono); font-size:clamp(1rem,2vw,1.375rem); letter-spacing:.1em;
   color:rgba(248,246,242,.6); opacity:0; transform:translateY(14px); margin:3vh 0 0;
-  font-variant-numeric:tabular-nums;
+  font-variant-numeric:tabular-nums; text-wrap:balance;
 }
 /* the tail of the same sentence, so it inherits the same size and flows
    straight on — only the colour and weight separate the two halves */
@@ -1063,7 +1078,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .flip-card{ width:clamp(50px,9vh,72px); height:clamp(60px,11vh,88px); }
   .flip-face{ font-size:clamp(1.5rem,6vh,2.25rem); }
   .opening-greeting-text{ font-size:clamp(1.5rem,7vh,2.375rem); }
-  .scroll-hint{ height:52px; bottom:calc(22px + env(safe-area-inset-bottom)); }
+  .scroll-hint{ bottom:calc(22px + env(safe-area-inset-bottom)); }
   /* landscape crops the photos top and bottom instead of left and right, so the
      baked-in lockup stays whole and this stays the desktop treatment — but at
      ~400px of height Munich's caption was landing 15px inside the bottom of
