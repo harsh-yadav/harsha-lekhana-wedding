@@ -21,13 +21,27 @@
 <!-- ============================================================
      STYLES
      ============================================================ -->
-<link rel="stylesheet" href="style.css?v=65377fd">
+<link rel="stylesheet" href="style.css?v=b37490c">
 </head>
 <body>
 
 <a href="#scene-details" class="skip-link">Skip to wedding details</a>
 
+<!-- the page has no other <h1> — everything else is scene-level content
+     inside a single continuous narrative, so this is the one real page-level
+     heading a screen reader's heading navigation would otherwise never find -->
+<h1 class="sr-only">Harsha &amp; Lekhana's wedding on 30 November 2026 in Bangalore</h1>
+
 <div class="progress-bar"><div class="progress-bar__fill" id="progressFill"></div></div>
+
+<!-- a bare instant jump reads as broken; an eased scroll covering this much
+     distance runs straight through the pinned Living Earth/Connection
+     scenes and gets caught in their own autoplay (they take over an
+     in-flight scroll the same way they take over an idle one, since both
+     just look like "scroll position is inside this pin's range" to them).
+     A quick dip-to-background hides an instant jump instead — used by
+     #detailsJump only, see setupProgressAndNav in script.js. -->
+<div class="jump-transition" id="jumpTransition" aria-hidden="true"></div>
 
 <nav class="dot-nav" id="dotNav" aria-label="Scene navigation"></nav>
 
@@ -193,6 +207,7 @@
   <!-- SCENE 2 — LIVING EARTH -->
   <section class="scene scene-tall earth-tall" id="scene-earth" data-scene-name="Living Earth" aria-label="Living Earth" data-cinematic="true">
     <div class="pin-wrap">
+      <h2 class="sr-only">Living Earth — Munich and Bangalore</h2>
       <canvas class="scene-canvas" id="earthCanvas"></canvas>
       <div class="earth-caption" id="earth-label-munich">
         <b>&#128205; Munich</b>
@@ -215,6 +230,10 @@
 
   <!-- SCENE 3 — MUNICH -->
   <section class="scene city-scene" id="scene-munich" data-scene-name="Munich" aria-label="Munich">
+    <!-- the city name is otherwise only in the baked-in photo lockup outside
+         portrait viewports (see .city-title below) — this gives heading
+         navigation a real "Munich" landmark at every viewport -->
+    <h2 class="sr-only">Munich</h2>
     <div class="city-photo">
       <div class="city-sky"></div>
       <div class="moon-ambient" aria-hidden="true"></div>
@@ -248,6 +267,7 @@
 
   <!-- SCENE 4 — BANGALORE -->
   <section class="scene city-scene" id="scene-bangalore" data-scene-name="Bangalore" aria-label="Bangalore">
+    <h2 class="sr-only">Bangalore</h2>
     <div class="city-photo">
       <div class="city-sky"></div>
       <div class="golden-haze" aria-hidden="true"></div>
@@ -279,7 +299,7 @@
       <img class="person-photo" id="bridePhoto" alt="Lekhana" loading="lazy" decoding="async">
     </div>
     <div class="person-heading will-reveal">
-      <p class="person-name">Lekhana</p>
+      <h2 class="person-name">Lekhana</h2>
       <p class="person-descriptor">Graceful. Warm. Spirited. Quietly magnetic.</p>
     </div>
   </section>
@@ -291,7 +311,7 @@
       <img class="person-photo" id="groomPhoto" alt="Harshavardhan" loading="lazy" decoding="async">
     </div>
     <div class="person-heading will-reveal">
-      <p class="person-name">Harshavardhan</p>
+      <h2 class="person-name">Harshavardhan</h2>
       <p class="person-descriptor">Observant. Witty. Thoughtful. A little unconventional.</p>
     </div>
   </section>
@@ -299,6 +319,7 @@
   <!-- SCENE 5 — CONNECTION (now the complete story: 18 May through 30 November) -->
   <section class="scene scene-tall connection-tall" id="scene-connection" data-scene-name="Connection" aria-label="Our story" data-cinematic="true">
     <div class="pin-wrap">
+      <h2 class="sr-only">Our story</h2>
       <canvas class="scene-canvas" id="connectionCanvas"></canvas>
       <div class="connection-caption" id="connectionCaption">
         <p class="connection-caption-date" id="connectionCaptionDate"></p>
@@ -377,6 +398,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-<script src="script.js?v=65377fd"></script>
+<script src="script.js?v=b37490c"></script>
 </body>
 </html>

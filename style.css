@@ -109,6 +109,15 @@ button{font-family:var(--font-body); cursor:pointer;}
   transition:width .08s linear;
 }
 
+/* see the note beside its markup in index.html — hides an instant long-jump
+   behind a quick dip to the background color, for #detailsJump only */
+.jump-transition{
+  position:fixed; inset:0; z-index:1500; background:var(--bg);
+  opacity:0; pointer-events:none;
+  transition:opacity .22s var(--ease-out);
+}
+.jump-transition.is-active{ opacity:1; }
+
 .audio-toggle{
   position:fixed; z-index:900;
   bottom:calc(28px + env(safe-area-inset-bottom));
@@ -343,15 +352,15 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 .scene-tall{ height:260vh; height:260svh; }
 .scene-tall.earth-tall{ height:170vh; height:170svh; }
 /* the connection scene is the whole story, scrubbed — its height IS the
-   pacing. 1060svh over 8 beats gives each beat ~1.2 screen-heights of
-   scroll to play out, which is what makes it read as cinematic rather
-   than hurried. Lower this one number to speed the entire scene up. */
-/* 1000 rather than 1060 because the 29 June beat now runs at half a slot
-   (BEAT_WEIGHTS in script.js): the shorter grid is renormalised back to 0..1,
-   so without trimming the scene the saved progress would just be handed to the
-   other beats. At this height every full-weight beat still spans 108vh of
-   scroll, exactly as before, and the short one spans 54vh. */
-.scene-tall.connection-tall{ height:1000vh; height:1000svh; }
+   pacing. Every full-weight beat gets 0.12 of this total (BEAT_WEIGHTS in
+   script.js sums to 7.5, and 0.90/7.5 = 0.12); the 29 June beat runs at
+   half a slot, so it gets half that. Raise or lower this one number to
+   change how much scroll the whole story takes to play out. 1400svh puts
+   a full beat at 168vh (~1.68 screen-heights) — raised from 1000svh/120vh
+   because a single fast scroll or trackpad flick could otherwise clear an
+   entire beat (or several) in one gesture, silently skipping real dated
+   moments in the story rather than just moving through them quickly. */
+.scene-tall.connection-tall{ height:1400vh; height:1400svh; }
 /* dvh here, svh on the scroll boxes above — the two units are doing different
    jobs. A scene's *height* sets its scroll length, so it wants svh: a length
    that never changes underfoot, or the page would re-measure and jump every
@@ -612,6 +621,15 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   object-fit:contain;
   filter:brightness(1.12) saturate(1.06);
   box-shadow:0 30px 90px rgba(0,0,0,.55);
+}
+/* same "no frame, no tint" rule as the photo it replaces — just the
+   person's initial, quiet enough to read as a placeholder rather than
+   content, sized to hold the same footprint so the scene doesn't collapse */
+.person-photo-fallback{
+  display:flex; align-items:center; justify-content:center;
+  height:min(68vh, 720px); width:min(68vh, 720px); max-width:92vw;
+  font-family:var(--font-display); font-weight:400; font-style:italic;
+  font-size:clamp(4rem, 14vw, 8rem); color:rgba(248,246,242,.18);
 }
 .person-heading{ display:flex; flex-direction:column; align-items:center; gap:10px; }
 .person-name{

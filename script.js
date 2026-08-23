@@ -2012,6 +2012,24 @@ const PosterScene = (function(){
   return { init };
 })();
 
+/* the bride/groom photos are the one pair of images on the site with no
+   degradation path (unlike the poster right above) — same idea as
+   PosterScene's fallback, but quieter: this scene's own rule is "no frame,
+   no tint, the picture is the point," so the fallback is just the person's
+   initial in the same restrained voice, not a bordered card. */
+function setPersonPhoto(imgId, src, name){
+  const img = document.getElementById(imgId);
+  img.addEventListener('error', ()=>{
+    const frame = img.parentElement;
+    img.remove();
+    const fallback = document.createElement('div');
+    fallback.className = 'person-photo-fallback';
+    fallback.textContent = name.charAt(0);
+    frame.appendChild(fallback);
+  }, { once:true });
+  img.src = src;
+}
+
 /* ============================================================
    13. AMBIENT PARTICLE FIELDS — one ParticleField per scene,
    matching the two visual languages established in the creative
@@ -2270,6 +2288,31 @@ function setupProgressAndNav(){
         onLeaveBack:()=> detailsJump.classList.remove('is-reached'),
         onLeave:()=> detailsJump.classList.add('is-reached'),
         onEnterBack:()=> detailsJump.classList.add('is-reached')
+      });
+      /* left as a real <a href> so it still works with no JS at all. Not
+         given the dot-nav's own eased lenisInstance.scrollTo(duration:1.4)
+         — this jump is long enough to run straight through the pinned
+         Living Earth/Connection scenes, and a scroll position that sits
+         inside their range for over a second, animating, is exactly what
+         their own autoplay watches for: it takes over the in-flight scroll
+         the same way it takes over an idle one, and this jump never
+         actually arrives (confirmed live — it stalls inside Connection).
+         An instant jump doesn't expose that window at all, so it's used
+         here instead, hidden behind a quick dip via #jumpTransition. */
+      detailsJump.addEventListener('click', e=>{
+        e.preventDefault();
+        const y = detailsTarget.getBoundingClientRect().top + window.scrollY;
+        const jump = ()=>{
+          if(lenisInstance){ lenisInstance.scrollTo(y, { immediate:true }); }
+          else{ window.scrollTo(0, y); }
+        };
+        const overlay = document.getElementById('jumpTransition');
+        if(REDUCED_MOTION || !overlay){ jump(); return; }
+        overlay.classList.add('is-active');
+        setTimeout(()=>{
+          jump();
+          requestAnimationFrame(()=> overlay.classList.remove('is-active'));
+        }, 240);
       });
     }
   }
@@ -2896,8 +2939,8 @@ document.addEventListener('DOMContentLoaded', function(){
   if(wedding.features.countdown) Countdown.init();
   DetailsRenderer.init();
   PosterScene.init();
-  document.getElementById('bridePhoto').src = wedding.bridePhoto;
-  document.getElementById('groomPhoto').src = wedding.groomPhoto;
+  setPersonPhoto('bridePhoto', wedding.bridePhoto, wedding.bride);
+  setPersonPhoto('groomPhoto', wedding.groomPhoto, wedding.groom);
 
   initAmbientFields();
   setupReveals();
