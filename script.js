@@ -2129,10 +2129,21 @@ function setupPinnedScenes(){
        any real scroll/touch/key/tap, and it picks back up from wherever
        they left off (not from the top) once input goes idle again. It never
        fights a deliberate scroll — it only ever moves in the gaps between
-       them. Used below for both the globe and the story-beats scene. */
+       them. Used below for both the globe and the story-beats scene.
+
+       "Never fights a deliberate scroll" has to know which direction was
+       deliberate, though — a visitor scrolling UP to revisit an earlier beat
+       is exactly as deliberate as one scrolling down, and autoplay only ever
+       drives forward (toward `target`). Without tracking direction, pausing
+       to read anything after a backward scroll re-armed the same forward
+       autoplay that had just been overridden, dragging the visitor straight
+       back to where they'd scrolled away from — the scene became effectively
+       impossible to back out of by pausing, only by out-scrolling the resume
+       timer. lastDirection (from ScrollTrigger's own self.direction) gates
+       the resume: idle time after a backward scroll just stays idle. */
     function setupSceneAutoplay({ target, totalDurationMs, resumeDelayMs = 1400 }){
       const rateMs = totalDurationMs / target;
-      let selfRef = null, active = false, raf = null, resumeTimer = null;
+      let selfRef = null, active = false, raf = null, resumeTimer = null, lastDirection = 1;
       function stopRaf(){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
       function clearResumeTimer(){ if(resumeTimer){ clearTimeout(resumeTimer); resumeTimer = null; } }
       function run(){
@@ -2160,14 +2171,20 @@ function setupPinnedScenes(){
         stopRaf();
         clearResumeTimer();
         if(!active) return;
+        if(lastDirection < 0) return;
         resumeTimer = setTimeout(run, resumeDelayMs);
       }
       ['wheel','touchstart','keydown','pointerdown'].forEach(evt =>
         window.addEventListener(evt, pause, { passive:true }));
       return {
-        setSelf(self){ selfRef = self; },
-        onEnter(self){ selfRef = self; active = true; run(); },
-        onEnterBack(self){ selfRef = self; active = true; run(); },
+        setSelf(self){ selfRef = self; if(self && typeof self.direction === 'number') lastDirection = self.direction; },
+        onEnter(self){ selfRef = self; active = true; lastDirection = 1; run(); },
+        /* arriving backward (scrolled up from further down the page) is
+           itself the deliberate signal — don't immediately chase forward
+           again, just arm the same idle-resume any other backward scroll
+           would, so the visitor actually gets to see what they scrolled
+           back for */
+        onEnterBack(self){ selfRef = self; active = true; lastDirection = -1; },
         onLeave(){ active = false; stopRaf(); clearResumeTimer(); },
         onLeaveBack(){ active = false; stopRaf(); clearResumeTimer(); }
       };
