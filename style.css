@@ -151,6 +151,19 @@ button{font-family:var(--font-body); cursor:pointer;}
   display:flex; flex-direction:column; align-items:center; gap:56px;
   -webkit-tap-highlight-color:transparent;
 }
+/* on a tall canvas — iPad portrait, a big desktop monitor — dead-centering
+   this small cluster leaves a growing, unused void between the plaque and
+   the scroll cue at the bottom edge (verified 300-430px on those screens).
+   Widening the gap between the craft and the plaque uses that height on
+   purpose instead of leaving it empty — and since the wander flight already
+   measures its own box from the rendered plaque position every time
+   (travelBox() in script.js), the satellite automatically roams the extra
+   room rather than needing a second, separate tuning pass. Left untouched
+   below 900px tall, where the composition already reads correctly. */
+@media (min-height:900px){
+  .gate-sat{ gap:clamp(56px, 10vh, 180px); }
+  .gate-inner{ margin-top:clamp(0px, 16vh, 220px); }
+}
 
 /* Two nested wrappers so the craft can hold two independent motions without
    them fighting over one transform: the outer one carries it across space, the
