@@ -125,10 +125,19 @@ button{font-family:var(--font-body); cursor:pointer;}
 }
 .audio-toggle.is-visible{opacity:1; transform:scale(1); pointer-events:auto;}
 @media (hover:hover){ .audio-toggle:hover{border-color:rgba(var(--gold-rgb),.8);} }
-.audio-toggle svg{width:18px; height:18px; stroke:var(--gold); fill:none;}
-.audio-toggle .icon-off{display:none;}
-.audio-toggle[data-playing="false"] .icon-on{display:none;}
-.audio-toggle[data-playing="false"] .icon-off{display:block;}
+/* on/off swap crossfades in place rather than cutting — the same
+   entrance idiom as the button itself (opacity + a settle-in scale on
+   --ease-out), just quick, since this is a press acknowledgment, not a
+   focal moment. Both icons stack on the button's center so the outgoing
+   one can fade under the incoming one instead of the layout jumping. */
+.audio-toggle svg{
+  width:18px; height:18px; stroke:var(--gold); fill:none;
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(1);
+  opacity:1; transition:opacity .18s var(--ease-out), transform .18s var(--ease-out);
+}
+.audio-toggle .icon-off{ opacity:0; transform:translate(-50%,-50%) scale(.7); }
+.audio-toggle[data-playing="false"] .icon-on{ opacity:0; transform:translate(-50%,-50%) scale(.7); }
+.audio-toggle[data-playing="false"] .icon-off{ opacity:1; transform:translate(-50%,-50%) scale(1); }
 /* the icon says "sound" but not "there is music here, press this" — so it gets
    a name on first arrival, sitting flush against the button and matching it.
    Shown and retired from initLoaderAndOpening(). */
