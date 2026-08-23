@@ -2244,6 +2244,35 @@ function setupProgressAndNav(){
       onToggle:self => { if(self.isActive){ dots.forEach(d=>d.classList.remove('is-active')); dots[i].classList.add('is-active'); } }
     });
   });
+
+  /* the mobile/zoom jump control offers a shortcut to #scene-details — no
+     point once the visitor is actually there, or has scrolled past it. It
+     also stays off for the gate scene specifically: that scene is a
+     deliberately quiet, one-decision-at-a-time moment (see initMusicGate),
+     and a visitor can't scroll past it before their first tap there anyway. */
+  const detailsJump = document.getElementById('detailsJump');
+  if(detailsJump){
+    const gateEl = document.getElementById('scene-gate');
+    if(gateEl){
+      ScrollTrigger.create({
+        trigger:gateEl, start:'top top', end:'bottom top',
+        onLeave:()=> detailsJump.classList.add('is-unlocked'),
+        onEnterBack:()=> detailsJump.classList.remove('is-unlocked')
+      });
+    } else {
+      detailsJump.classList.add('is-unlocked');
+    }
+    const detailsTarget = document.getElementById('scene-details');
+    if(detailsTarget){
+      ScrollTrigger.create({
+        trigger:detailsTarget, start:'top 85%', end:'bottom top',
+        onEnter:()=> detailsJump.classList.add('is-reached'),
+        onLeaveBack:()=> detailsJump.classList.remove('is-reached'),
+        onLeave:()=> detailsJump.classList.add('is-reached'),
+        onEnterBack:()=> detailsJump.classList.add('is-reached')
+      });
+    }
+  }
 }
 
 /* ============================================================

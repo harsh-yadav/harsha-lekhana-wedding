@@ -141,6 +141,31 @@ button{font-family:var(--font-body); cursor:pointer;}
 /* the icon says "sound" but not "there is music here, press this" — so it gets
    a name on first arrival, sitting flush against the button and matching it.
    Shown and retired from initLoaderAndOpening(). */
+
+/* the dot-nav's mobile/zoom replacement — see the note beside its markup in
+   index.html. Opposite corner from the audio button, same fixed/safe-area
+   pattern. Hidden by default; only shown at all in the same <=860px band
+   where .dot-nav disappears (below), and even there it needs BOTH classes:
+   .is-unlocked (set once the visitor has scrolled past the gate scene, or
+   immediately if there's no gate — see setupProgressAndNav) and NOT
+   .is-reached (cleared once they've actually scrolled to #scene-details) —
+   quiet during the gate's own one-decision-at-a-time moment, and no point
+   offering a shortcut to where they already are. */
+.details-jump{
+  position:fixed; z-index:900;
+  bottom:calc(28px + env(safe-area-inset-bottom));
+  left:calc(28px + env(safe-area-inset-left));
+  display:none; align-items:center; gap:8px;
+  padding:10px 16px; border-radius:999px;
+  background:rgba(5,5,5,.55); backdrop-filter:blur(12px);
+  border:1px solid rgba(var(--gold-rgb),.35);
+  color:var(--gold); text-decoration:none;
+  font-family:var(--font-body); font-size:.75rem; letter-spacing:.08em; text-transform:uppercase;
+  opacity:0; transform:translateY(8px) scale(.92); pointer-events:none;
+  transition:opacity .4s var(--ease-out), transform .4s var(--ease-out), border-color .3s var(--ease-out);
+}
+.details-jump svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+@media (hover:hover){ .details-jump:hover{ border-color:rgba(var(--gold-rgb),.8); } }
 /* ---------- SCENE 0 — the music gate ----------
    A satellite holding a placard, centred on its own screen before the story
    starts. Pressing it turns the music on; scrolling past it declines. Either
@@ -282,7 +307,11 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
     background:rgba(var(--gold-rgb),.6); transform:scale(1.3);
   }
 }
-@media (max-width:860px){ .dot-nav{display:none;} }
+@media (max-width:860px){
+  .dot-nav{display:none;}
+  .details-jump{ display:inline-flex; }
+  .details-jump.is-unlocked:not(.is-reached){ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+}
 
 /* ============================================================
    LOADER
@@ -493,13 +522,14 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
      to two lines, so it can't orphan the emoji alone. */
   text-wrap:balance;
 }
-/* the small light sans read as interface copy sitting under a display line.
-   Set as a title-card subtitle instead — the same gold small-caps the rest of
-   the site uses for its eyebrows, under a short rule that ties it to the
-   greeting rather than leaving it floating. */
+/* a full question, not a label — small-caps tracking that reads fine on a
+   2-4 word eyebrow turns into a slog at this length, so this borrows the
+   site's other register instead: the same quiet italic display voice used
+   for captions elsewhere (.connection-caption-text, .earth-caption-weather). */
 .opening-greeting-sub{
-  font-family:var(--font-body); font-weight:500; font-size:clamp(.6875rem,1.05vw,.8125rem);
-  letter-spacing:.24em; text-transform:uppercase; line-height:1.9;
+  font-family:var(--font-display); font-weight:400; font-style:italic;
+  font-size:clamp(.9375rem,1.3vw,1.0625rem);
+  letter-spacing:.01em; line-height:1.6;
   color:var(--accent); margin:0 auto; max-width:34ch; text-wrap:balance;
 }
 .opening-greeting-sub::before{
@@ -534,8 +564,12 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
    alone, the browser fakes it by stretching the 500 outline, and a synthetic
    bold on a serif reads as smudged rather than heavier */
 .earth-caption b{ font-family:var(--font-display); font-weight:500; font-style:italic; font-size:1.25rem; letter-spacing:0; text-transform:none; color:var(--gold); }
-.earth-caption-date{ font-size:.625rem; letter-spacing:.2em; color:rgba(248,246,242,.5); }
-.earth-caption-weather{ font-size:.625rem; letter-spacing:.14em; text-transform:none; font-style:italic; font-family:var(--font-display); color:var(--accent); }
+/* .6875rem (11px) floor, not the old .625rem/.5625rem — this is functional
+   info (the actual local date and weather feel) sitting right next to the
+   site's other centerpiece scene; it shouldn't be the least legible text
+   on the page. Matches the plain local-time span already at .6875rem. */
+.earth-caption-date{ font-size:.6875rem; letter-spacing:.2em; color:rgba(248,246,242,.5); }
+.earth-caption-weather{ font-size:.6875rem; letter-spacing:.14em; text-transform:none; font-style:italic; font-family:var(--font-display); color:var(--accent); }
 .earth-caption.is-visible{opacity:1;}
 #earth-label-munich{ top:24%; left:16%; text-align:left; }
 #earth-label-bangalore{ bottom:22%; right:14%; text-align:right; }
@@ -588,10 +622,12 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
      hierarchy inverted, whatever else distinguishes them */
   font-size:clamp(2.125rem, 5.2vw, 3.5rem); color:var(--ivory); margin:0;
 }
+/* a real descriptive phrase, not a label — matches .person-name's own italic
+   display voice (same family, smaller/gold) rather than the site's short-label
+   caps treatment, which read as a slog at this length */
 .person-descriptor{
-  font-family:var(--font-body); font-weight:500;
-  font-size:clamp(.8125rem, 1.3vw, .9375rem); letter-spacing:.14em;
-  text-transform:uppercase;
+  font-family:var(--font-display); font-weight:400; font-style:italic;
+  font-size:clamp(.9375rem, 1.4vw, 1.0625rem); letter-spacing:.01em;
   color:var(--accent); margin:0; max-width:34ch; text-align:center;
   text-wrap:balance;
 }
@@ -637,6 +673,9 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 #scene-bangalore .city-story{ background:#1a0f08; }
 .city-story p{
   font-family:var(--font-body); font-weight:400; text-align:justify;
+  /* justify on prose this narrow rivers badly without real hyphenation —
+     lang="en" is set on <html>, so the browser's own dictionary handles it */
+  hyphens:auto;
   font-size:clamp(1.0625rem, 1.6vw, 1.3125rem); line-height:1.75;
   color:rgba(248,246,242,.82);
   max-width:58ch; margin:0 auto;
@@ -731,8 +770,12 @@ body.reduced-motion .golden-haze{ animation:none; }
   position:absolute; left:0; right:0; bottom:20%; z-index:6;
   opacity:0; pointer-events:none;
 }
+/* a full sentence doing the same job as the story-beat captions above it in
+   this scene (.connection-caption-text) — given the matching italic voice
+   instead of the caps-label treatment its old sibling markup implied */
 .connection-countdown-heading{
-  font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em; text-transform:uppercase;
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:var(--caps-size); letter-spacing:.01em;
   color:var(--accent); margin:0 0 18px; text-shadow:0 1px 8px rgba(0,0,0,.65);
 }
 
@@ -919,9 +962,12 @@ body.reduced-motion .golden-haze{ animation:none; }
 .ending-names{ font-family:var(--font-display); font-size:clamp(2rem,5vw,3.5rem); margin-top:2vh; opacity:0; transform:translateY(16px); }
 .ending-names .amp{ color:var(--gold); }
 .ending-date{ font-size:var(--caps-size); letter-spacing:.32em; text-transform:uppercase; color:var(--accent); opacity:0; transform:translateY(10px); }
+/* a full instruction, not a label — the underline, gold color, and leading
+   "+" already signal "this is a control" without needing caps to carry it,
+   and sentence case scans faster for the one actionable line on the page */
 .ics-link{
   margin-top:3vh; display:inline-flex; align-items:center; gap:10px;
-  font-size:.75rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold);
+  font-size:.8125rem; letter-spacing:.02em; color:var(--gold);
   text-decoration:none; border-bottom:1px solid rgba(var(--gold-rgb),.4); padding-bottom:6px;
   opacity:0; transform:translateY(10px);
   transition:color .3s var(--ease-out), border-color .3s var(--ease-out);
@@ -984,7 +1030,6 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
 
   .earth-caption{ font-size:.625rem; letter-spacing:.2em; }
   .earth-caption b{ font-size:1rem; }
-  .earth-caption-date, .earth-caption-weather{ font-size:.5625rem; }
   .earth-distance{ bottom:calc(42px + env(safe-area-inset-bottom)); }
 
   .connection-caption{ bottom:20%; max-width:88vw; }
@@ -1022,7 +1067,6 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .connection-caption-text{ font-size:clamp(1.0625rem,5.2vw,1.375rem); }
   .connection-caption-date{ margin-bottom:9px; }
   .map-frame{ aspect-ratio:1/1; }
-  .ics-link{ letter-spacing:.14em; }
 }
 
 /* ---------- Flip cover screen and anything near it ---------- */
@@ -1129,6 +1173,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .map-link{ min-height:44px; display:inline-flex; align-items:center; }
   .ics-link{ min-height:44px; align-items:center; }
   .audio-toggle{ width:48px; height:48px; }
+  .details-jump{ min-height:44px; }
 }
 
 /* ---------- portrait: the city photos' baked-in titles ----------

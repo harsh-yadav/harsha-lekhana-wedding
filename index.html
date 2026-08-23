@@ -31,6 +31,17 @@
 
 <nav class="dot-nav" id="dotNav" aria-label="Scene navigation"></nav>
 
+<!-- dot-nav is hidden below 860px (and so at 200%+ desktop zoom) with nothing
+     replacing it — a mobile guest reopening the link to re-check the venue had
+     no shortcut at all, only the full ~9-scene scroll every time. This is that
+     shortcut: a single visible jump straight to the practical section, held
+     back during the gate's own quiet intro and gone again once they've
+     actually reached the target (see setupProgressAndNav in script.js). -->
+<a href="#scene-details" class="details-jump" id="detailsJump" aria-label="Jump to wedding details">
+  Details
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+</a>
+
 <div class="opening-flash" id="openingFlash" aria-hidden="true"></div>
 
 <button class="audio-toggle" id="audioToggle" data-playing="false" aria-label="Toggle music" aria-pressed="false">
@@ -339,7 +350,7 @@
       <!-- one flowing paragraph rather than a line each: on its own line the
            second sentence read as a break in the thought -->
       <div class="ending-lines">
-        <p class="ending-line">From one city to another, one chapter to the next. Two peoples, Two journeys.</p>
+        <p class="ending-line">From one city to another, one chapter to the next. Two people, two journeys.</p>
       </div>
       <!-- one continuous sentence: the tail was a bare <p> outside
            .ending-distance, so it fell back to body type at a smaller size,
