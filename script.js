@@ -2275,11 +2275,15 @@ function initAudio(){
   const btn = document.getElementById('audioToggle');
   if(!wedding.features.musicToggle || !wedding.music){ btn.remove(); return; }
   const audio = new Audio();
-  audio.loop = true; audio.volume = 0.35; audio.preload = 'auto';
+  /* most visitors are on a phone, often on cellular, and roughly half of
+     them decline music at the gate — preloading the file for everyone
+     regardless spends real mobile bandwidth on a feature they may never
+     use, competing with the photos the story actually needs. Nothing
+     downloads until the visitor presses play. */
+  audio.loop = true; audio.volume = 0.35; audio.preload = 'none';
   let broken = false;
   audio.addEventListener('error', ()=>{ broken = true; btn.remove(); }, { once:true });
   audio.src = wedding.music;
-  audio.load();
 
   /* what the visitor asked for, kept separate from what the element is doing
      right now — the two diverge whenever the page is in the background */
