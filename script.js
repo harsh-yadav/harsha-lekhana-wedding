@@ -33,6 +33,11 @@ const wedding = {
   },
   /* additive, optional — safe to leave blank */
   dressCode:"",
+  /* traditional lineage line under each name ("D/O"/"S/O" = daughter/son of).
+     Left blank by default rather than a placeholder — an unfilled placeholder
+     would ship to real guests if forgotten. Fill in to show the line. */
+  brideParents:"",
+  groomParents:"",
   /* every time below is wall-clock time in `eventTimeZone`. The calendar
      file converts them to absolute instants, so a guest anywhere sees the
      event at the correct local time on their own device. `location` is
@@ -52,7 +57,9 @@ const wedding = {
     musicToggle:true,
     smoothScroll:true,
     mouseParallax:true,
-    gyroscope:true
+    gyroscope:true,
+    scratchReveal:true,
+    blessingWall:true
   }
 };
 window.WEDDING_CONFIG = wedding;
@@ -2031,6 +2038,237 @@ function setPersonPhoto(imgId, src, name){
 }
 
 /* ============================================================
+   12b. SCRATCH-TO-REVEAL DATE CARD — a gold foil layer the visitor
+   drags away (mouse or touch) to reveal the date underneath, same
+   canvas-scratch technique as a real scratch lottery ticket. Falls
+   back to just showing the date, no interaction, under reduced
+   motion or when canvas 2D isn't available — the date is real
+   content, not something reduced-motion visitors should have to
+   fight a canvas to see.
+   ============================================================ */
+function initScratchReveal(){
+  const root = document.getElementById('scratchReveal');
+  const card = document.getElementById('scratchCard');
+  const canvas = document.getElementById('scratchCardCanvas');
+  const dateEl = document.getElementById('scratchCardDate');
+  const hint = document.getElementById('scratchRevealHint');
+  if(!root || !card || !canvas || !dateEl) return;
+
+  if(dateEl.textContent.trim() === '') dateEl.textContent = wedding.weddingDateDisplay;
+
+  /* willReadFrequently: scratchedRatio() calls getImageData on every
+     pointermove — without this hint the browser silently drops the
+     canvas out of GPU acceleration to support that, which is worse */
+  const ctx = canvas.getContext && canvas.getContext('2d', { willReadFrequently:true });
+  if(!wedding.features.scratchReveal || REDUCED_MOTION || !ctx){
+    card.classList.add('is-static');
+    if(hint) hint.classList.add('is-hidden');
+    return;
+  }
+
+  let w = 0, h = 0, cleared = false, scratching = false, lastX = 0, lastY = 0;
+  let hasScratched = false;
+
+  function paintFoil(){
+    const grd = ctx.createLinearGradient(0, 0, w, h);
+    grd.addColorStop(0,   '#7a5f1e');
+    grd.addColorStop(.22, '#d9b45c');
+    grd.addColorStop(.5,  '#f6dfa0');
+    grd.addColorStop(.78, '#c99a3e');
+    grd.addColorStop(1,   '#8a6a22');
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.font = '600 13px ' + getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SCRATCH TO REVEAL THE DATE', w/2, h/2);
+  }
+
+  function resize(){
+    const rect = card.getBoundingClientRect();
+    const dpr = Math.min(devicePixelRatio || 1, MAX_PIXEL_RATIO);
+    w = rect.width; h = rect.height;
+    canvas.width = Math.round(w*dpr);
+    canvas.height = Math.round(h*dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if(!cleared) paintFoil();
+  }
+
+  function pointFromEvent(e){
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function scratchTo(x, y){
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 34;
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 17, 0, Math.PI*2);
+    ctx.fill();
+    lastX = x; lastY = y;
+  }
+
+  /* sampling every 4th pixel in each direction is plenty to estimate
+     coverage and far cheaper than reading the full buffer on every move */
+  function scratchedRatio(){
+    const dpr = Math.min(devicePixelRatio || 1, MAX_PIXEL_RATIO);
+    const data = ctx.getImageData(0, 0, Math.round(w*dpr), Math.round(h*dpr)).data;
+    let transparent = 0, total = 0;
+    for(let i = 3; i < data.length; i += 4*4){
+      total++;
+      if(data[i] < 20) transparent++;
+    }
+    return total ? transparent/total : 0;
+  }
+
+  function clearAll(){
+    if(cleared) return;
+    cleared = true;
+    card.classList.add('is-cleared');
+    if(hint) hint.classList.add('is-hidden');
+    window.removeEventListener('resize', resize);
+  }
+
+  function onDown(e){
+    if(cleared) return;
+    scratching = true;
+    hasScratched = true;
+    if(hint) hint.classList.add('is-hidden');
+    const p = pointFromEvent(e);
+    lastX = p.x; lastY = p.y;
+    scratchTo(p.x, p.y);
+    e.preventDefault();
+  }
+  function onMove(e){
+    if(!scratching || cleared) return;
+    const p = pointFromEvent(e);
+    scratchTo(p.x, p.y);
+    if(scratchedRatio() > 0.45) clearAll();
+    e.preventDefault();
+  }
+  function onUp(){
+    scratching = false;
+    /* a light scratch that never crossed the auto-clear threshold still
+       deserves to finish — no half-scratched card left behind */
+    if(hasScratched && !cleared && scratchedRatio() > 0.2) clearAll();
+  }
+
+  canvas.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onMove, { passive:false });
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+
+  resize();
+  window.addEventListener('resize', resize, { passive:true });
+}
+
+/* ============================================================
+   12c. ANONYMOUS BLESSING WALL
+   IMPORTANT — storage: this saves submitted blessings to this browser's
+   own localStorage only. That's enough to demo the feature and to see
+   your own submissions persist across visits, but it is NOT shared
+   between guests — a message a guest writes on their phone never
+   reaches your screen or anyone else's. Making this a real shared wall
+   needs a small backend (a serverless function + a database, or a
+   service like Firebase/Supabase) to hold one list everyone reads from
+   and writes to. Flagged clearly rather than shipped as if it already
+   works that way.
+   ============================================================ */
+function initBlessingWall(){
+  const scene = document.getElementById('scene-blessings');
+  if(!scene) return;
+  if(!wedding.features.blessingWall){ scene.remove(); return; }
+
+  const form = document.getElementById('blessingForm');
+  const input = document.getElementById('blessingInput');
+  const counter = document.getElementById('blessingCounter');
+  const submitBtn = form.querySelector('.blessing-submit');
+  const wall = document.getElementById('blessingWall');
+  const MAX_LEN = 140;
+  const STORAGE_KEY = 'weddingBlessings';
+  /* shown whenever there's nothing real yet, so the wall never launches
+     looking abandoned — not saved to storage, so they never crowd out
+     genuine submissions once those exist */
+  const SEED = [
+    'Wishing you a lifetime of love and laughter!',
+    'So happy for you both — can’t wait to celebrate!',
+    'May your journey together be as beautiful as your story.'
+  ];
+
+  function loadStored(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch(e){ return []; }
+  }
+  function saveStored(list){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, 200))); }
+    catch(e){ /* storage full or unavailable — the submission still renders this session */ }
+  }
+
+  function renderCard(text, prepend){
+    const card = document.createElement('div');
+    card.className = 'blessing-card';
+    const p = document.createElement('p');
+    p.textContent = text;
+    card.appendChild(p);
+    if(prepend) wall.insertBefore(card, wall.firstChild);
+    else wall.appendChild(card);
+  }
+
+  function renderAll(){
+    wall.innerHTML = '';
+    const stored = loadStored();
+    const all = stored.length ? stored.slice().reverse() : SEED;
+    all.forEach(text => renderCard(text, false));
+  }
+
+  function updateCounter(){
+    const left = MAX_LEN - input.value.length;
+    counter.textContent = left + ' character' + (left === 1 ? '' : 's') + ' left';
+  }
+
+  input.addEventListener('input', updateCounter);
+  updateCounter();
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault();
+    const text = input.value.trim();
+    if(!text) return;
+    const stored = loadStored();
+    stored.push(text);
+    saveStored(stored);
+    renderCard(text, true);
+    input.value = '';
+    updateCounter();
+
+    /* a brief label swap on the button itself is the confirmation —
+       no separate toast competing for attention right after someone's
+       written something personal */
+    const original = submitBtn.textContent;
+    submitBtn.textContent = 'Added ❤';
+    submitBtn.classList.add('is-sent');
+    submitBtn.disabled = true;
+    setTimeout(()=>{
+      submitBtn.textContent = original;
+      submitBtn.classList.remove('is-sent');
+      submitBtn.disabled = false;
+    }, 1800);
+  });
+
+  renderAll();
+}
+
+/* ============================================================
    13. AMBIENT PARTICLE FIELDS — one ParticleField per scene,
    matching the two visual languages established in the creative
    direction: fine cool "schematic" lines for Munich, warm petals/
@@ -2958,6 +3196,15 @@ document.addEventListener('DOMContentLoaded', function(){
   PosterScene.init();
   setPersonPhoto('bridePhoto', wedding.bridePhoto, wedding.bride);
   setPersonPhoto('groomPhoto', wedding.groomPhoto, wedding.groom);
+  /* left as empty elements (not removed from the DOM) when blank, so filling
+     in wedding.brideParents/groomParents later needs no markup change —
+     .person-parents:empty already hides them with no layout impact */
+  const brideParentsEl = document.getElementById('brideParents');
+  const groomParentsEl = document.getElementById('groomParents');
+  if(brideParentsEl && wedding.brideParents) brideParentsEl.textContent = wedding.brideParents;
+  if(groomParentsEl && wedding.groomParents) groomParentsEl.textContent = wedding.groomParents;
+  initScratchReveal();
+  initBlessingWall();
 
   initAmbientFields();
   setupReveals();

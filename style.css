@@ -649,6 +649,16 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   color:var(--accent); margin:0; max-width:34ch; text-align:center;
   text-wrap:balance;
 }
+/* a factual lineage line ("D/O"/"S/O" + parents), not a description — short
+   and formal, so this keeps the site's caps-label voice rather than the
+   descriptor's italic phrase treatment. :empty hides it with no layout
+   impact when wedding.brideParents/groomParents is left blank (the default). */
+.person-parents{
+  font-family:var(--font-body); font-size:.75rem; letter-spacing:.14em;
+  text-transform:uppercase; color:rgba(248,246,242,.5);
+  margin:.6em 0 0; max-width:34ch; text-align:center;
+}
+.person-parents:empty{ display:none; }
 
 /* ============================================================
    SCENE 3 / 4 — MUNICH & BANGALORE
@@ -842,11 +852,54 @@ body.reduced-motion .golden-haze{ animation:none; }
   content:''; display:block; width:56px; height:1px; margin:0 auto 3vh;
   background:linear-gradient(90deg, transparent, rgba(var(--gold-rgb),.8), transparent);
 }
+/* ============================================================
+   SCRATCH-TO-REVEAL DATE CARD — a small tactile beat between the
+   invitation line and the poster. See initScratchReveal in script.js.
+   ============================================================ */
+.scratch-reveal{ margin:5vh auto 0; display:flex; flex-direction:column; align-items:center; }
+.scratch-reveal-eyebrow{ margin:0 0 10px; }
+.scratch-reveal-heading{
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(1.25rem, 3vw, 1.75rem); color:var(--ivory); margin:0 0 3vh;
+  text-align:center;
+}
+.scratch-card{
+  position:relative; width:min(340px, 82vw); height:132px;
+  border-radius:12px; overflow:hidden;
+  border:1px solid rgba(var(--gold-rgb),.3);
+  box-shadow:0 20px 44px rgba(0,0,0,.5);
+}
+.scratch-card-date{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  margin:0; background:#0d0b08;
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(1.375rem, 3.4vw, 1.75rem); color:var(--gold);
+  letter-spacing:.02em;
+}
+.scratch-card-canvas{
+  position:absolute; inset:0; width:100%; height:100%;
+  /* a plain cursor works for mouse; the touch gesture itself is the
+     affordance on a phone, where a cursor icon means nothing */
+  cursor:grab; touch-action:none;
+}
+.scratch-card.is-cleared .scratch-card-canvas{
+  opacity:0; pointer-events:none; transition:opacity .6s var(--ease-out);
+}
+/* reduced motion (or no canvas 2D support): the interaction is dropped
+   entirely and the date is simply shown, per initScratchReveal's fallback */
+.scratch-card.is-static .scratch-card-canvas{ display:none; }
+.scratch-reveal-hint{
+  font-family:var(--font-body); font-size:.75rem; letter-spacing:.08em;
+  color:rgba(248,246,242,.45); margin:14px 0 0; text-align:center;
+  transition:opacity .5s var(--ease-out);
+}
+.scratch-reveal-hint.is-hidden{ opacity:0; }
+
 /* a step quieter than the invitation above it — gold and smaller, so it
    labels the poster underneath rather than competing with the heading */
 .poster-caption{
   font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(.9375rem,1.7vw,1.25rem); color:var(--accent); margin:7vh 0 0;
+  font-size:clamp(.9375rem,1.7vw,1.25rem); color:var(--accent); margin:4vh 0 0;
 }
 .connection-countdown-date{
   font-family:var(--font-display); font-style:italic; font-weight:400;
@@ -933,6 +986,75 @@ body.reduced-motion .golden-haze{ animation:none; }
 .poster-fallback .pf-amp{ color:var(--gold); display:block; margin:.2em 0; }
 .poster-fallback .pf-date{ font-size:var(--caps-size); letter-spacing:.3em; text-transform:uppercase; color:var(--gold); }
 .poster-fallback .pf-cities{ font-size:.75rem; letter-spacing:.16em; text-transform:uppercase; color:rgba(248,246,242,.5); }
+
+/* ============================================================
+   BLESSING WALL — a guest-contributed scene between the details and
+   the closing. See initBlessingWall in script.js.
+   ============================================================ */
+.blessing-scene{
+  min-height:100vh; min-height:100svh;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4vh;
+  padding:clamp(48px, 8vh, 88px) var(--scene-pad);
+  background:var(--bg); text-align:center;
+}
+.blessing-form{
+  display:flex; flex-direction:column; gap:14px;
+  width:100%; max-width:480px;
+}
+.blessing-input{
+  width:100%; resize:vertical; min-height:84px;
+  background:rgba(255,255,255,.03); color:var(--ivory);
+  border:1px solid rgba(var(--gold-rgb),.28); border-radius:10px;
+  padding:14px 16px; font-family:var(--font-body); font-size:.9375rem; line-height:1.5;
+  transition:border-color .3s var(--ease-out);
+}
+.blessing-input::placeholder{ color:rgba(248,246,242,.4); }
+.blessing-input:focus{ outline:none; border-color:rgba(var(--gold-rgb),.7); }
+.blessing-form-row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.blessing-counter{ font-size:.75rem; letter-spacing:.04em; color:rgba(248,246,242,.45); }
+.blessing-submit{
+  font-family:var(--font-body); font-weight:600; font-size:.8125rem;
+  letter-spacing:.08em; text-transform:uppercase;
+  color:var(--bg); background:var(--gold); border:none; border-radius:999px;
+  padding:11px 22px; cursor:pointer; white-space:nowrap;
+  transition:background .3s var(--ease-out), transform .3s var(--ease-out);
+}
+.blessing-submit:disabled{ opacity:.45; cursor:default; }
+@media (hover:hover){
+  .blessing-submit:not(:disabled):hover{ background:var(--accent); transform:translateY(-1px); }
+}
+/* a short-lived confirmation state on the button itself rather than a
+   separate toast — one less thing competing for attention right after
+   a guest has just written something personal */
+.blessing-submit.is-sent{ background:var(--accent); }
+
+.blessing-wall{
+  display:flex; flex-wrap:wrap; justify-content:center; gap:14px;
+  width:100%; max-width:760px;
+}
+.blessing-card{
+  flex:1 1 220px; max-width:280px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(var(--gold-rgb),.2); border-radius:10px;
+  padding:20px 18px; text-align:left;
+  opacity:0; transform:translateY(10px);
+  animation:blessingIn .5s var(--ease-out) forwards;
+}
+@keyframes blessingIn{ to{ opacity:1; transform:translateY(0); } }
+@media (prefers-reduced-motion: reduce){ .blessing-card{ animation:none; opacity:1; transform:none; } }
+body.reduced-motion .blessing-card{ animation:none; opacity:1; transform:none; }
+.blessing-card::before{
+  content:'\2766'; display:block; color:var(--gold); font-size:1.125rem; margin-bottom:8px; opacity:.8;
+}
+.blessing-card p{
+  margin:0; font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:1rem; line-height:1.5; color:rgba(248,246,242,.9);
+}
+.blessing-wall-empty{
+  font-family:var(--font-display); font-style:italic; font-size:1rem;
+  color:rgba(248,246,242,.45);
+}
 
 /* ============================================================
    ENDING
