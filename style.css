@@ -901,12 +901,6 @@ body.reduced-motion .golden-haze{ animation:none; }
   font-family:var(--font-display); font-style:italic; font-weight:400;
   font-size:clamp(.9375rem,1.7vw,1.25rem); color:var(--accent); margin:4vh 0 0;
 }
-.connection-countdown-date{
-  font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(1.75rem, 4vw, 2.75rem); color:var(--gold);
-  margin:2.2rem 0 0;
-  text-shadow:0 2px 24px rgba(var(--gold-rgb),.3), 0 1px 8px rgba(0,0,0,.65);
-}
 /* a quiet nudge once the countdown itself has settled in — small and low-
    opacity on purpose, not the full gate/opening treatment (no label, no
    trail, no particle), so it doesn't compete with the date above it */

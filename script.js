@@ -36,8 +36,8 @@ const wedding = {
   /* traditional lineage line under each name ("D/O"/"S/O" = daughter/son of).
      Left blank by default rather than a placeholder — an unfilled placeholder
      would ship to real guests if forgotten. Fill in to show the line. */
-  brideParents:"",
-  groomParents:"",
+  brideParents:"D/O Mr. Manjunath & Mrs. Kavitha",
+  groomParents:"S/O Mr. Gangadhara MK & Mrs. Kalpana G",
   /* every time below is wall-clock time in `eventTimeZone`. The calendar
      file converts them to absolute instants, so a guest anywhere sees the
      event at the correct local time on their own device. `location` is
