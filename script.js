@@ -669,7 +669,7 @@ const EarthScene = (function(){
     globe.add(arcPulse);
 
     /* starfield background */
-    const starCount = Math.round(1200 * TIER_PARTICLES);
+    const starCount = Math.round(2200 * TIER_PARTICLES);
     const starPos = new Float32Array(starCount*3);
     for(let i=0;i<starCount;i++){
       const r = 900 + Math.random()*900;
@@ -680,7 +680,7 @@ const EarthScene = (function(){
     }
     const starGeo = new THREE.BufferGeometry();
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos,3));
-    starField = new THREE.Points(starGeo, new THREE.PointsMaterial({ color:0xffffff, size:1.1, transparent:true, opacity:0.55 }));
+    starField = new THREE.Points(starGeo, new THREE.PointsMaterial({ color:0xffffff, size:1.6, transparent:true, opacity:0.8 }));
     scene.add(starField);
 
     /* cloud layer — sits just above the coastline dots, drifts independently
@@ -2317,7 +2317,11 @@ function initAmbientFields(){
     ['bangaloreParticles', { count:55,  kind:'petal', color:'232,151,59', speed:0.10, sizeMin:1.4, sizeMax:2.8, driftY:-0.4, parallax:0.02 }],
     ['brideParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:0.6, sizeMax:2, driftY:0, parallax:0.02 }],
     ['groomParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:0.6, sizeMax:2, driftY:0, parallax:0.02 }],
-    ['savedateParticles',  { count:130, kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:0.7, sizeMax:2, driftY:-0.15, parallax:0.03 }],
+    ['blessingParticles',  { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:0.6, sizeMax:2, driftY:0, parallax:0.02 }],
+    /* this canvas spans the whole reveal-flow scene (countdown through the
+       photo), several screens tall, so it needs a much higher count than a
+       single-viewport scene just to keep the same visible density per screen */
+    ['savedateParticles',  { count:320, kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:0.7, sizeMax:2, driftY:-0.15, parallax:0.03 }],
     ['endingCanvas',           { count:110, kind:'firefly', color:'232,199,122', speed:0.05, sizeMin:0.5, sizeMax:1.3, driftY:-0.25, parallax:0.02 }],
     ['endingCanvasLanterns',   { count:14,  kind:'lantern', color:'212,175,55',  speed:0.06, sizeMin:2.2, sizeMax:4, driftY:-0.35, parallax:0.01 }]
   ];
