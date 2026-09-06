@@ -64,6 +64,18 @@ const wedding = {
 };
 window.WEDDING_CONFIG = wedding;
 
+/* Blessing wall storage/auth — a public client config, not a secret (access
+   is controlled by Firestore's own security rules, not by hiding this).
+   Project: harsha-lekhana-wedding. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA5nV32XPpoQ02lw6PFe36u6KssnqpblTE",
+  authDomain: "harsha-lekhana-wedding.firebaseapp.com",
+  projectId: "harsha-lekhana-wedding",
+  storageBucket: "harsha-lekhana-wedding.firebasestorage.app",
+  messagingSenderId: "309238631480",
+  appId: "1:309238631480:web:3343f0ee6953eebf522acd"
+};
+
 /* ============================================================
    1. ENVIRONMENT / CAPABILITY DETECTION
    ============================================================ */
@@ -1109,11 +1121,17 @@ const ConnectionScene = (function(){
     Object.assign(slot(5), { date:'29 June 2026',    text:'Different skies. Different clocks. The story continued.',
       rise:'snap',  fall:'linear', enter:WP[5], exit:WP[6] }),
     /* the last two beats carry the dated timeline into the countdown that
-       follows — the table leaves the final connection line open, so these
-       stay deliberately plain rather than inventing a new flourish */
+       follows, both left without a date now — one already had no natural
+       date of its own, and the other's real date (the wedding day itself)
+       is meant to be revealed for the first time later, by the
+       scratch-reveal card in the Save the Date scene */
     Object.assign(slot(6), { date:'',                text:'Every mile since has been bringing them closer.',
       rise:'out',   fall:'in',     enter:WP[6], exit:WP[7] }),
-    Object.assign(slot(7), { date:'30 November 2026',text:'A new chapter begins.',
+    /* left blank like the beat before it, not the real date — the
+       scratch-reveal card later in the Save the Date scene is meant to be
+       the first place a visitor learns the actual date, and this said it
+       first, right as the dated timeline was building toward that reveal */
+    Object.assign(slot(7), { date:'',                text:'A new chapter begins.',
       rise:'inout', fall:'linear', enter:WP[7], exit:WP[8] })
   ];
   function captionEnvelope(b, p){
@@ -2171,101 +2189,171 @@ function initScratchReveal(){
 }
 
 /* ============================================================
-   12c. ANONYMOUS BLESSING WALL
-   IMPORTANT — storage: this saves submitted blessings to this browser's
-   own localStorage only. That's enough to demo the feature and to see
-   your own submissions persist across visits, but it is NOT shared
-   between guests — a message a guest writes on their phone never
-   reaches your screen or anyone else's. Making this a real shared wall
-   needs a small backend (a serverless function + a database, or a
-   service like Firebase/Supabase) to hold one list everyone reads from
-   and writes to. Flagged clearly rather than shipped as if it already
-   works that way.
+   12c. BLESSING WALL — backed by Firestore (see FIREBASE_CONFIG near the
+   top of this file), so every guest reads and writes the same shared
+   collection regardless of device. Deleting a card requires being signed
+   in as the one admin account set up in Firebase Auth (see the "Manage
+   blessings" link) — enforced by Firestore's own security rules, not
+   just by hiding the button, so it holds even against a guest poking at
+   devtools.
    ============================================================ */
 function initBlessingWall(){
   const scene = document.getElementById('scene-blessings');
   if(!scene) return;
-  if(!wedding.features.blessingWall){ scene.remove(); return; }
+  if(!wedding.features.blessingWall || typeof firebase === 'undefined'){ scene.remove(); return; }
 
   const form = document.getElementById('blessingForm');
+  const nameInput = document.getElementById('blessingName');
   const input = document.getElementById('blessingInput');
   const counter = document.getElementById('blessingCounter');
+  const errorEl = document.getElementById('blessingError');
   const submitBtn = form.querySelector('.blessing-submit');
   const wall = document.getElementById('blessingWall');
   const MAX_LEN = 140;
-  const STORAGE_KEY = 'weddingBlessings';
-  /* shown whenever there's nothing real yet, so the wall never launches
-     looking abandoned — not saved to storage, so they never crowd out
-     genuine submissions once those exist */
-  const SEED = [
-    'Wishing you a lifetime of love and laughter!',
-    'So happy for you both — can’t wait to celebrate!',
-    'May your journey together be as beautiful as your story.'
-  ];
 
-  function loadStored(){
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const list = raw ? JSON.parse(raw) : [];
-      return Array.isArray(list) ? list : [];
-    } catch(e){ return []; }
-  }
-  function saveStored(list){
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, 200))); }
-    catch(e){ /* storage full or unavailable — the submission still renders this session */ }
-  }
+  const app = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.firestore(app);
+  const auth = firebase.auth(app);
+  const blessingsRef = db.collection('blessings');
 
-  function renderCard(text, prepend){
-    const card = document.createElement('div');
-    card.className = 'blessing-card';
-    const p = document.createElement('p');
-    p.textContent = text;
-    card.appendChild(p);
-    if(prepend) wall.insertBefore(card, wall.firstChild);
-    else wall.appendChild(card);
+  let isAdmin = false;
+  let latestDocs = [];
+
+  function showError(msg){
+    errorEl.textContent = msg;
+    errorEl.hidden = !msg;
   }
 
   function renderAll(){
     wall.innerHTML = '';
-    const stored = loadStored();
-    const all = stored.length ? stored.slice().reverse() : SEED;
-    all.forEach(text => renderCard(text, false));
+    if(!latestDocs.length){
+      const empty = document.createElement('p');
+      empty.className = 'blessing-wall-empty';
+      empty.textContent = 'Be the first to leave a blessing.';
+      wall.appendChild(empty);
+      return;
+    }
+    latestDocs.forEach(({ id, name, text })=>{
+      const card = document.createElement('div');
+      card.className = 'blessing-card';
+      const p = document.createElement('p');
+      p.textContent = text;
+      const nameEl = document.createElement('p');
+      nameEl.className = 'blessing-card-name';
+      nameEl.textContent = '— ' + name;
+      card.appendChild(p);
+      card.appendChild(nameEl);
+      if(isAdmin){
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'blessing-card-delete';
+        del.setAttribute('aria-label', 'Delete this blessing');
+        del.textContent = '✕';
+        del.addEventListener('click', ()=>{
+          if(!window.confirm('Delete this blessing? This can\'t be undone.')) return;
+          blessingsRef.doc(id).delete().catch(err=> window.alert('Could not delete: ' + err.message));
+        });
+        card.appendChild(del);
+      }
+      wall.appendChild(card);
+    });
   }
+
+  /* live: fires immediately with whatever's cached, then again whenever
+     the collection actually changes — for any guest, from any device,
+     including one someone else just submitted from */
+  blessingsRef.orderBy('createdAt', 'desc').limit(100).onSnapshot(snap=>{
+    latestDocs = snap.docs.map(d=> Object.assign({ id: d.id }, d.data()));
+    renderAll();
+  }, err=>{
+    console.error('blessing wall read failed', err);
+  });
+
+  auth.onAuthStateChanged(user=>{
+    isAdmin = !!user;
+    renderAll();
+    updateAdminPanel(user);
+  });
 
   function updateCounter(){
     const left = MAX_LEN - input.value.length;
     counter.textContent = left + ' character' + (left === 1 ? '' : 's') + ' left';
   }
-
   input.addEventListener('input', updateCounter);
   updateCounter();
 
   form.addEventListener('submit', e=>{
     e.preventDefault();
+    showError('');
+    const name = nameInput.value.trim();
     const text = input.value.trim();
-    if(!text) return;
-    const stored = loadStored();
-    stored.push(text);
-    saveStored(stored);
-    renderCard(text, true);
-    input.value = '';
-    updateCounter();
+    if(!name || !text) return;
 
-    /* a brief label swap on the button itself is the confirmation —
-       no separate toast competing for attention right after someone's
-       written something personal */
-    const original = submitBtn.textContent;
-    submitBtn.textContent = 'Added ❤';
-    submitBtn.classList.add('is-sent');
     submitBtn.disabled = true;
-    setTimeout(()=>{
-      submitBtn.textContent = original;
-      submitBtn.classList.remove('is-sent');
+    blessingsRef.add({
+      name: name.slice(0, 60),
+      text: text.slice(0, 140),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(()=>{
+      form.reset();
+      updateCounter();
+      const original = submitBtn.textContent;
+      submitBtn.textContent = 'Added ❤';
+      submitBtn.classList.add('is-sent');
+      setTimeout(()=>{
+        submitBtn.textContent = original;
+        submitBtn.classList.remove('is-sent');
+        submitBtn.disabled = false;
+      }, 1800);
+    }).catch(err=>{
       submitBtn.disabled = false;
-    }, 1800);
+      showError('Couldn’t send that — check your connection and try again.');
+      console.error('blessing submit failed', err);
+    });
   });
 
-  renderAll();
+  /* ---- admin: sign in to reveal delete buttons ------------------------ */
+  const adminLink = document.getElementById('blessingAdminLink');
+  const adminPanel = document.getElementById('blessingAdminPanel');
+  const loginForm = document.getElementById('blessingLoginForm');
+  const emailInput = document.getElementById('blessingAdminEmail');
+  const passwordInput = document.getElementById('blessingAdminPassword');
+  const statusEl = document.getElementById('blessingAdminStatus');
+
+  function updateAdminPanel(user){
+    if(user){
+      loginForm.hidden = true;
+      statusEl.textContent = 'Signed in as ' + user.email + ' — delete buttons are live.';
+      statusEl.className = 'blessing-admin-status is-signed-in';
+      if(!document.getElementById('blessingSignOut')){
+        const signOut = document.createElement('button');
+        signOut.type = 'button';
+        signOut.id = 'blessingSignOut';
+        signOut.textContent = 'Sign out';
+        signOut.addEventListener('click', ()=> auth.signOut());
+        adminPanel.appendChild(signOut);
+      }
+    } else {
+      loginForm.hidden = false;
+      statusEl.textContent = '';
+      statusEl.className = 'blessing-admin-status';
+      const signOut = document.getElementById('blessingSignOut');
+      if(signOut) signOut.remove();
+    }
+  }
+
+  adminLink.addEventListener('click', ()=>{ adminPanel.hidden = !adminPanel.hidden; });
+  loginForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    statusEl.textContent = 'Signing in…';
+    statusEl.className = 'blessing-admin-status';
+    auth.signInWithEmailAndPassword(emailInput.value.trim(), passwordInput.value)
+      .then(()=>{ passwordInput.value = ''; })
+      .catch(err=>{
+        statusEl.textContent = err.code === 'auth/invalid-credential' ? 'Wrong email or password.' : err.message;
+        statusEl.className = 'blessing-admin-status is-error';
+      });
+  });
 }
 
 /* ============================================================
