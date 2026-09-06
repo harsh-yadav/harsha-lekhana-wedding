@@ -36,8 +36,11 @@ const wedding = {
   /* traditional lineage line under each name ("D/O"/"S/O" = daughter/son of).
      Left blank by default rather than a placeholder — an unfilled placeholder
      would ship to real guests if forgotten. Fill in to show the line. */
-  brideParents:"D/O Mr. Manjunath & Mrs. Kavitha",
-  groomParents:"S/O Mr. Gangadhara MK & Mrs. Kalpana G",
+  /* <br> splits each onto two lines (father, then mother) -- trusted,
+     hand-written config, not user input, so rendering it as HTML below
+     is safe the same way PosterScene's fallback markup already is */
+  brideParents:"D/O Mr. Manjunath<br>&amp; Mrs. Kavitha",
+  groomParents:"S/O Mr. Gangadhara MK<br>&amp; Mrs. Kalpana G",
   /* every time below is wall-clock time in `eventTimeZone`. The calendar
      file converts them to absolute instants, so a guest anywhere sees the
      event at the correct local time on their own device. `location` is
@@ -3228,8 +3231,8 @@ document.addEventListener('DOMContentLoaded', function(){
      .person-parents:empty already hides them with no layout impact */
   const brideParentsEl = document.getElementById('brideParents');
   const groomParentsEl = document.getElementById('groomParents');
-  if(brideParentsEl && wedding.brideParents) brideParentsEl.textContent = wedding.brideParents;
-  if(groomParentsEl && wedding.groomParents) groomParentsEl.textContent = wedding.groomParents;
+  if(brideParentsEl && wedding.brideParents) brideParentsEl.innerHTML = wedding.brideParents;
+  if(groomParentsEl && wedding.groomParents) groomParentsEl.innerHTML = wedding.groomParents;
   initScratchReveal();
   initBlessingWall();
 

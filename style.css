@@ -654,7 +654,7 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
    descriptor's italic phrase treatment. :empty hides it with no layout
    impact when wedding.brideParents/groomParents is left blank (the default). */
 .person-parents{
-  font-family:var(--font-body); font-size:.75rem; letter-spacing:.14em;
+  font-family:var(--font-body); font-size:.75rem; letter-spacing:.14em; line-height:1.7;
   text-transform:uppercase; color:rgba(248,246,242,.5);
   margin:.6em 0 0; max-width:34ch; text-align:center;
 }
