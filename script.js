@@ -2193,11 +2193,10 @@ function initScratchReveal(){
 /* ============================================================
    12c. BLESSING WALL — backed by Firestore (see FIREBASE_CONFIG near the
    top of this file), so every guest reads and writes the same shared
-   collection regardless of device. Deleting a card requires being signed
-   in as the one admin account set up in Firebase Auth (see the "Manage
-   blessings" link) — enforced by Firestore's own security rules, not
-   just by hiding the button, so it holds even against a guest poking at
-   devtools.
+   collection regardless of device. No delete UI on the site itself by
+   design — moderation happens directly in the Firebase console
+   (Firestore Database → Data → blessings), which is simpler and can't
+   get stuck in a half-signed-in state the way an in-page admin login can.
    ============================================================ */
 function initBlessingWall(){
   const scene = document.getElementById('scene-blessings');
@@ -2219,27 +2218,23 @@ function initBlessingWall(){
 
   const app = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.firestore(app);
-  const auth = firebase.auth(app);
   const blessingsRef = db.collection('blessings');
-
-  let isAdmin = false;
-  let latestDocs = [];
 
   function showError(msg){
     errorEl.textContent = msg;
     errorEl.hidden = !msg;
   }
 
-  function renderAll(){
+  function renderAll(docs){
     wall.innerHTML = '';
-    if(!latestDocs.length){
+    if(!docs.length){
       const empty = document.createElement('p');
       empty.className = 'blessing-wall-empty';
       empty.textContent = 'Be the first to leave a blessing.';
       wall.appendChild(empty);
       return;
     }
-    latestDocs.forEach(({ id, name, text })=>{
+    docs.forEach(({ name, text })=>{
       const card = document.createElement('div');
       card.className = 'blessing-card';
       const p = document.createElement('p');
@@ -2249,18 +2244,6 @@ function initBlessingWall(){
       nameEl.textContent = '— ' + name;
       card.appendChild(p);
       card.appendChild(nameEl);
-      if(isAdmin){
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'blessing-card-delete';
-        del.setAttribute('aria-label', 'Delete this blessing');
-        del.textContent = '✕';
-        del.addEventListener('click', ()=>{
-          if(!window.confirm('Delete this blessing? This can\'t be undone.')) return;
-          blessingsRef.doc(id).delete().catch(err=> window.alert('Could not delete: ' + err.message));
-        });
-        card.appendChild(del);
-      }
       wall.appendChild(card);
     });
   }
@@ -2269,16 +2252,9 @@ function initBlessingWall(){
      the collection actually changes — for any guest, from any device,
      including one someone else just submitted from */
   blessingsRef.orderBy('createdAt', 'desc').limit(100).onSnapshot(snap=>{
-    latestDocs = snap.docs.map(d=> Object.assign({ id: d.id }, d.data()));
-    renderAll();
+    renderAll(snap.docs.map(d=> d.data()));
   }, err=>{
     console.error('blessing wall read failed', err);
-  });
-
-  auth.onAuthStateChanged(user=>{
-    isAdmin = !!user;
-    renderAll();
-    updateAdminPanel(user);
   });
 
   function updateCounter(){
@@ -2316,55 +2292,6 @@ function initBlessingWall(){
       showError('Couldn’t send that — check your connection and try again.');
       console.error('blessing submit failed', err);
     });
-  });
-
-  /* ---- admin: sign in to reveal delete buttons ------------------------ */
-  const adminLink = document.getElementById('blessingAdminLink');
-  const adminPanel = document.getElementById('blessingAdminPanel');
-  const loginForm = document.getElementById('blessingLoginForm');
-  const emailInput = document.getElementById('blessingAdminEmail');
-  const passwordInput = document.getElementById('blessingAdminPassword');
-  const statusEl = document.getElementById('blessingAdminStatus');
-
-  function updateAdminPanel(user){
-    if(user){
-      loginForm.hidden = true;
-      statusEl.textContent = 'Signed in as ' + user.email + ' — delete buttons are live.';
-      statusEl.className = 'blessing-admin-status is-signed-in';
-      if(!document.getElementById('blessingSignOut')){
-        const signOut = document.createElement('button');
-        signOut.type = 'button';
-        signOut.id = 'blessingSignOut';
-        signOut.textContent = 'Sign out';
-        signOut.addEventListener('click', ()=> auth.signOut());
-        adminPanel.appendChild(signOut);
-      }
-    } else {
-      loginForm.hidden = false;
-      statusEl.textContent = '';
-      statusEl.className = 'blessing-admin-status';
-      const signOut = document.getElementById('blessingSignOut');
-      if(signOut) signOut.remove();
-    }
-  }
-
-  /* the link itself only exists for someone who loaded the page with
-     ?admin in the URL — a normal guest never sees it, never learns it's
-     there. Firebase's own auth persistence still restores a signed-in
-     session (and its delete buttons) on a later visit without the param;
-     this only gates the sign-in/sign-out UI's visibility, not the session. */
-  if(new URLSearchParams(location.search).has('admin')) adminLink.hidden = false;
-  adminLink.addEventListener('click', ()=>{ adminPanel.hidden = !adminPanel.hidden; });
-  loginForm.addEventListener('submit', e=>{
-    e.preventDefault();
-    statusEl.textContent = 'Signing in…';
-    statusEl.className = 'blessing-admin-status';
-    auth.signInWithEmailAndPassword(emailInput.value.trim(), passwordInput.value)
-      .then(()=>{ passwordInput.value = ''; })
-      .catch(err=>{
-        statusEl.textContent = err.code === 'auth/invalid-credential' ? 'Wrong email or password.' : err.message;
-        statusEl.className = 'blessing-admin-status is-error';
-      });
   });
 }
 

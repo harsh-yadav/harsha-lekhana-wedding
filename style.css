@@ -1032,7 +1032,6 @@ body.reduced-motion .golden-haze{ animation:none; }
   width:100%; max-width:760px;
 }
 .blessing-card{
-  position:relative;
   flex:1 1 220px; max-width:280px;
   background:rgba(255,255,255,.03);
   border:1px solid rgba(var(--gold-rgb),.2); border-radius:10px;
@@ -1054,51 +1053,10 @@ body.reduced-motion .blessing-card{ animation:none; opacity:1; transform:none; }
   margin:10px 0 0; font-family:var(--font-body); font-style:normal; font-weight:600;
   font-size:.75rem; letter-spacing:.06em; text-transform:uppercase; color:var(--accent);
 }
-/* only ever rendered when signed in as the admin account — see
-   initBlessingAdmin. A guest never sees this button at all. */
-.blessing-card-delete{
-  position:absolute; top:10px; right:10px;
-  width:26px; height:26px; border-radius:50%;
-  background:rgba(0,0,0,.35); border:1px solid rgba(var(--gold-rgb),.3);
-  color:rgba(248,246,242,.7); font-size:.875rem; line-height:1;
-  display:flex; align-items:center; justify-content:center; cursor:pointer;
-  transition:background .2s var(--ease-out), color .2s var(--ease-out);
-}
-@media (hover:hover){
-  .blessing-card-delete:hover{ background:#7a2a20; color:#fff; }
-}
 .blessing-wall-empty{
   font-family:var(--font-display); font-style:italic; font-size:1rem;
   color:rgba(248,246,242,.45);
 }
-/* deliberately unstyled-looking — a plain small text link a guest has no
-   reason to tap, not a second call to action competing with "Add Blessing" */
-.blessing-admin-link{
-  background:none; border:0; padding:4px; margin-top:2vh; cursor:pointer;
-  font-family:var(--font-body); font-size:.6875rem; letter-spacing:.04em;
-  color:rgba(248,246,242,.25);
-}
-.blessing-admin-panel{
-  display:flex; flex-direction:column; align-items:center; gap:10px;
-  width:100%; max-width:320px;
-}
-.blessing-admin-panel form{ display:flex; flex-direction:column; gap:10px; width:100%; }
-.blessing-admin-panel input{
-  background:rgba(255,255,255,.03); color:var(--ivory);
-  border:1px solid rgba(var(--gold-rgb),.28); border-radius:8px;
-  padding:10px 12px; font-family:var(--font-body); font-size:.875rem;
-}
-.blessing-admin-panel button{
-  font-family:var(--font-body); font-weight:600; font-size:.75rem;
-  letter-spacing:.06em; text-transform:uppercase;
-  color:var(--gold); background:none; border:1px solid rgba(var(--gold-rgb),.4);
-  border-radius:999px; padding:9px 16px; cursor:pointer;
-  transition:border-color .3s var(--ease-out), color .3s var(--ease-out);
-}
-@media (hover:hover){ .blessing-admin-panel button:hover{ border-color:var(--gold); color:var(--accent); } }
-.blessing-admin-status{ margin:0; font-size:.75rem; color:rgba(248,246,242,.5); }
-.blessing-admin-status.is-error{ color:#e0846b; }
-.blessing-admin-status.is-signed-in{ color:var(--gold); }
 
 /* ============================================================
    ENDING

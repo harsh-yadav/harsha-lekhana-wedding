@@ -410,20 +410,6 @@
     </form>
 
     <div class="blessing-wall" id="blessingWall" aria-live="polite" aria-label="Blessings from guests"></div>
-
-    <!-- not just visually quiet -- entirely absent from the page for a
-         normal visitor. initBlessingWall only reveals blessingAdminLink at
-         all when the URL carries ?admin=1 (see wedding.adminQueryParam),
-         so there's nothing here for a guest to notice or wonder about. -->
-    <button type="button" class="blessing-admin-link" id="blessingAdminLink" hidden>Manage blessings</button>
-    <div class="blessing-admin-panel" id="blessingAdminPanel" hidden>
-      <form id="blessingLoginForm" autocomplete="on">
-        <input type="email" id="blessingAdminEmail" placeholder="Admin email" autocomplete="username" required>
-        <input type="password" id="blessingAdminPassword" placeholder="Password" autocomplete="current-password" required>
-        <button type="submit">Sign in</button>
-      </form>
-      <p class="blessing-admin-status" id="blessingAdminStatus"></p>
-    </div>
   </section>
 
   <!-- ENDING -->
@@ -464,7 +450,6 @@
 <!-- blessing wall storage/auth only -- see initBlessingWall/initBlessingAdmin -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="script.js?v=719a27a"></script>
 </body>
 </html>
