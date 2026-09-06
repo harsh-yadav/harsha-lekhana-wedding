@@ -1587,7 +1587,7 @@ const ConnectionScene = (function(){
        everywhere else on the site */
     ambientStars = new Array(70).fill(0).map(()=>({
       x: Math.random()*w, y: Math.random()*h,
-      size: 7.2*dpr,
+      size: 1.5*dpr,
       phase: Math.random()*Math.PI*2,
       speed: 0.4+Math.random()*0.6
     }));
@@ -2316,17 +2316,17 @@ function initAmbientFields(){
     /* every "star" field below uses sizeMin===sizeMax on purpose -- a fixed
        size instead of a random range, so stars read as uniform dots across
        every scene rather than a mix of small and large */
-    ['starsCanvasGate',    { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:2.4, sizeMax:2.4, driftY:0, parallax:0.02 }],
-    ['starsCanvasOpening', { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:2.4, sizeMax:2.4, driftY:0, parallax:0.02 }],
-    ['munichParticles',    { count:55,  kind:'dot',  color:'248,246,242', speed:0.05, sizeMin:2.4, sizeMax:2.4, driftY:0.35, parallax:0.02 }],
+    ['starsCanvasGate',    { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:0.5, sizeMax:0.5, driftY:0, parallax:0.02 }],
+    ['starsCanvasOpening', { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:0.5, sizeMax:0.5, driftY:0, parallax:0.02 }],
+    ['munichParticles',    { count:55,  kind:'dot',  color:'248,246,242', speed:0.05, sizeMin:0.5, sizeMax:0.5, driftY:0.35, parallax:0.02 }],
     ['bangaloreParticles', { count:55,  kind:'petal', color:'232,151,59', speed:0.10, sizeMin:1.4, sizeMax:2.8, driftY:-0.4, parallax:0.02 }],
-    ['brideParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:2.4, sizeMax:2.4, driftY:0, parallax:0.02 }],
-    ['groomParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:2.4, sizeMax:2.4, driftY:0, parallax:0.02 }],
-    ['blessingParticles',  { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:2.4, sizeMax:2.4, driftY:0, parallax:0.02 }],
+    ['brideParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:0.5, sizeMax:0.5, driftY:0, parallax:0.02 }],
+    ['groomParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:0.5, sizeMax:0.5, driftY:0, parallax:0.02 }],
+    ['blessingParticles',  { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:0.5, sizeMax:0.5, driftY:0, parallax:0.02 }],
     /* this canvas spans the whole reveal-flow scene (countdown through the
        photo), several screens tall, so it needs a much higher count than a
        single-viewport scene just to keep the same visible density per screen */
-    ['savedateParticles',  { count:320, kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:2.4, sizeMax:2.4, driftY:-0.15, parallax:0.03 }],
+    ['savedateParticles',  { count:320, kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:0.5, sizeMax:0.5, driftY:-0.15, parallax:0.03 }],
     ['endingCanvas',           { count:110, kind:'firefly', color:'232,199,122', speed:0.05, sizeMin:0.5, sizeMax:1.3, driftY:-0.25, parallax:0.02 }],
     ['endingCanvasLanterns',   { count:14,  kind:'lantern', color:'212,175,55',  speed:0.06, sizeMin:2.2, sizeMax:4, driftY:-0.35, parallax:0.01 }]
   ];
