@@ -97,9 +97,12 @@ try{
 
 if(REDUCED_MOTION){ document.body.classList.add('reduced-motion'); }
 
-/* device performance tier drives particle counts / pixel ratio across the whole app */
+/* device performance tier drives particle counts / pixel ratio across the whole app.
+   'mid' is mostly phones tripping IS_SMALL rather than genuinely weak hardware,
+   and these are cheap canvas dots -- halving them (the old 0.5) read as a
+   near-empty sky on the device most guests will actually open this on. */
 const TIER = REDUCED_MOTION ? 'low' : (LOW_POWER ? 'mid' : 'high');
-const TIER_PARTICLES = { low: 0.15, mid: 0.5, high: 1 }[TIER];
+const TIER_PARTICLES = { low: 0.15, mid: 0.8, high: 1 }[TIER];
 document.documentElement.setAttribute('data-tier', TIER);
 const MAX_PIXEL_RATIO = TIER === 'high' ? Math.min(devicePixelRatio||1, 2) : 1.4;
 
@@ -347,7 +350,7 @@ class ParticleField{
     const py = this.mouse.y * this.h * o.parallax;
     for(const p of this.particles){
       p.x += p.vx; p.y += p.vy; p.wobble += 0.01;
-      if(o.twinkle){ p.a += 0.006*p.aDir; if(p.a<=0.15||p.a>=1){ p.aDir*=-1; } }
+      if(o.twinkle){ p.a += 0.006*p.aDir; if(p.a<=0.4||p.a>=1){ p.aDir*=-1; } }
       const wob = Math.sin(p.wobble) * (o.kind==='petal'||o.kind==='firefly' ? 6 : 1);
       const x = p.x + wob + px, y = p.y + py;
       if(p.y < -20 || p.y > this.h+20 || p.x < -20 || p.x > this.w+20){
@@ -1580,9 +1583,9 @@ const ConnectionScene = (function(){
   function ensureAmbientStars(){
     if(ambientStars && ambientStarsDims && ambientStarsDims[0]===w && ambientStarsDims[1]===h) return ambientStars;
     ambientStarsDims = [w,h];
-    ambientStars = new Array(40).fill(0).map(()=>({
+    ambientStars = new Array(70).fill(0).map(()=>({
       x: Math.random()*w, y: Math.random()*h,
-      size: (0.6+Math.random()*1.1)*dpr,
+      size: (0.7+Math.random()*1.3)*dpr,
       phase: Math.random()*Math.PI*2,
       speed: 0.4+Math.random()*0.6
     }));
@@ -1590,7 +1593,7 @@ const ConnectionScene = (function(){
   }
   function drawAmbientStars(timeSec){
     ensureAmbientStars().forEach(s=>{
-      const a = 0.06 + 0.09*(0.5+0.5*Math.sin(timeSec*s.speed + s.phase));
+      const a = 0.25 + 0.3*(0.5+0.5*Math.sin(timeSec*s.speed + s.phase));
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
       ctx.fillStyle = `rgba(248,246,242,${a.toFixed(3)})`;
@@ -2308,8 +2311,8 @@ function initBlessingWall(){
 function initAmbientFields(){
   if(!wedding.features.particles) return;
   const fields = [
-    ['starsCanvasGate',    { count:150, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:0.4, sizeMax:1.6, driftY:0, parallax:0.02 }],
-    ['starsCanvasOpening', { count:150, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:0.4, sizeMax:1.6, driftY:0, parallax:0.02 }],
+    ['starsCanvasGate',    { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:0.6, sizeMax:2.1, driftY:0, parallax:0.02 }],
+    ['starsCanvasOpening', { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:0.6, sizeMax:2.1, driftY:0, parallax:0.02 }],
     ['munichParticles',    { count:55,  kind:'dot',  color:'248,246,242', speed:0.05, sizeMin:0.8, sizeMax:2.1, driftY:0.35, parallax:0.02 }],
     ['bangaloreParticles', { count:55,  kind:'petal', color:'232,151,59', speed:0.10, sizeMin:1.4, sizeMax:2.8, driftY:-0.4, parallax:0.02 }],
     ['savedateParticles',  { count:80,  kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:0.5, sizeMax:1.6, driftY:-0.15, parallax:0.03 }],
