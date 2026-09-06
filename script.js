@@ -2315,7 +2315,9 @@ function initAmbientFields(){
     ['starsCanvasOpening', { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:0.6, sizeMax:2.1, driftY:0, parallax:0.02 }],
     ['munichParticles',    { count:55,  kind:'dot',  color:'248,246,242', speed:0.05, sizeMin:0.8, sizeMax:2.1, driftY:0.35, parallax:0.02 }],
     ['bangaloreParticles', { count:55,  kind:'petal', color:'232,151,59', speed:0.10, sizeMin:1.4, sizeMax:2.8, driftY:-0.4, parallax:0.02 }],
-    ['savedateParticles',  { count:80,  kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:0.5, sizeMax:1.6, driftY:-0.15, parallax:0.03 }],
+    ['brideParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:0.6, sizeMax:2, driftY:0, parallax:0.02 }],
+    ['groomParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:0.6, sizeMax:2, driftY:0, parallax:0.02 }],
+    ['savedateParticles',  { count:130, kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:0.7, sizeMax:2, driftY:-0.15, parallax:0.03 }],
     ['endingCanvas',           { count:110, kind:'firefly', color:'232,199,122', speed:0.05, sizeMin:0.5, sizeMax:1.3, driftY:-0.25, parallax:0.02 }],
     ['endingCanvasLanterns',   { count:14,  kind:'lantern', color:'212,175,55',  speed:0.06, sizeMin:2.2, sizeMax:4, driftY:-0.35, parallax:0.01 }]
   ];
