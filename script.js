@@ -460,50 +460,6 @@ function initBirds(canvas, color){
 }
 
 /* ============================================================
-   5d. DRIFTING CLOUDS (Munich) — soft blurred shapes moving
-   slowly across the sky, independent of the parallax layers.
-   ============================================================ */
-function initCityClouds(canvas){
-  if(!canvas || TIER === 'low' || REDUCED_MOTION) return;
-  const ctx = canvas.getContext('2d');
-  let w=0, h=0, blobs=[], running=false, raf=null;
-
-  function resize(){
-    const r = canvas.getBoundingClientRect();
-    const dpr = Math.min(devicePixelRatio||1, MAX_PIXEL_RATIO);
-    canvas.width = Math.round(r.width*dpr); canvas.height = Math.round(r.height*dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    w = r.width; h = r.height;
-    const n = Math.max(3, Math.round(6*TIER_PARTICLES));
-    blobs = new Array(n).fill(0).map(()=>({
-      x: Math.random()*w*1.4 - w*0.2, y: h*0.08 + Math.random()*h*0.3,
-      r: 50+Math.random()*90, speed: 0.05+Math.random()*0.08, a: 0.05+Math.random()*0.07
-    }));
-  }
-  function draw(){
-    ctx.clearRect(0,0,w,h);
-    blobs.forEach(b=>{
-      b.x += b.speed;
-      if(b.x - b.r > w) b.x = -b.r;
-      const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-      g.addColorStop(0, `rgba(248,246,242,${b.a})`);
-      g.addColorStop(1, 'rgba(248,246,242,0)');
-      ctx.beginPath(); ctx.ellipse(b.x,b.y,b.r,b.r*0.45,0,0,Math.PI*2);
-      ctx.fillStyle = g; ctx.fill();
-    });
-  }
-  function frame(){ if(!running) return; draw(); raf = requestAnimationFrame(frame); }
-  function start(){ if(running) return; running = true; frame(); }
-  function stop(){ running = false; if(raf) cancelAnimationFrame(raf); }
-
-  resize();
-  window.addEventListener('resize', resize, {passive:true});
-  onVisible(canvas, start);
-  const io = new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) stop(); }), {threshold:0});
-  io.observe(canvas);
-}
-
-/* ============================================================
    6. LIVING EARTH — Three.js dot-matrix globe built from the real
    coastline grid decoded above. Day/night shading on every land
    point is computed once from the real current subsolar point, so
@@ -1583,24 +1539,32 @@ const ConnectionScene = (function(){
   function ensureAmbientStars(){
     if(ambientStars && ambientStarsDims && ambientStarsDims[0]===w && ambientStarsDims[1]===h) return ambientStars;
     ambientStarsDims = [w,h];
-    /* fixed size (no random range) to match the uniform star size used
-       everywhere else on the site */
+    /* same base radius (1.75, pre dpr-scale) as every ParticleField "dot" star
+       on the site, so this scene's stars read as the same size, not just the
+       same size formula */
     ambientStars = new Array(70).fill(0).map(()=>({
       x: Math.random()*w, y: Math.random()*h,
-      size: 5.25*dpr,
+      size: 1.75*dpr,
       phase: Math.random()*Math.PI*2,
       speed: 0.4+Math.random()*0.6
     }));
     return ambientStars;
   }
   function drawAmbientStars(timeSec){
+    /* soft radial-gradient falloff, same as ParticleField's 'dot' kind --
+       a solid-filled circle of the same radius reads noticeably bigger and
+       harder-edged than the gradient dots used everywhere else */
     ensureAmbientStars().forEach(s=>{
       const a = 0.25 + 0.3*(0.5+0.5*Math.sin(timeSec*s.speed + s.phase));
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(248,246,242,${a.toFixed(3)})`;
-      ctx.fill();
+      const r = s.size*3;
+      const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
+      grd.addColorStop(0, 'rgba(212,175,55,0.85)');
+      grd.addColorStop(1, 'rgba(212,175,55,0)');
+      ctx.globalAlpha = a;
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI*2); ctx.fill();
     });
+    ctx.globalAlpha = 1;
   }
 
   function draw(){
@@ -2316,12 +2280,12 @@ function initAmbientFields(){
     /* every "star" field below uses sizeMin===sizeMax on purpose -- a fixed
        size instead of a random range, so stars read as uniform dots across
        every scene rather than a mix of small and large */
-    ['starsCanvasGate',    { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
-    ['starsCanvasOpening', { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
-    ['munichParticles',    { count:55,  kind:'dot',  color:'248,246,242', speed:0.05, sizeMin:1.75, sizeMax:1.75, driftY:0.35, parallax:0.02 }],
-    ['brideParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
-    ['groomParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
-    ['blessingParticles',  { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
+    ['starsCanvasGate',    { count:220, kind:'dot', color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
+    ['starsCanvasOpening', { count:220, kind:'dot', color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
+    ['munichParticles',    { count:55,  kind:'dot',  color:'212,175,55', speed:0.05, sizeMin:1.75, sizeMax:1.75, driftY:0.35, parallax:0.02 }],
+    ['brideParticles',     { count:150, kind:'dot',  color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
+    ['groomParticles',     { count:150, kind:'dot',  color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
+    ['blessingParticles',  { count:150, kind:'dot',  color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
     /* this canvas spans the whole reveal-flow scene (countdown through the
        photo), several screens tall, so it needs a much higher count than a
        single-viewport scene just to keep the same visible density per screen */
@@ -2338,7 +2302,6 @@ function initAmbientFields(){
 
   initBirds(document.getElementById('munichBirds'), 'rgba(232,199,122,0.55)');
   initBirds(document.getElementById('bangaloreBirds'), 'rgba(255,255,255,0.4)');
-  initCityClouds(document.getElementById('munichClouds'));
 }
 
 /* ============================================================
