@@ -105,6 +105,12 @@ const TIER = REDUCED_MOTION ? 'low' : (LOW_POWER ? 'mid' : 'high');
 const TIER_PARTICLES = { low: 0.15, mid: 0.8, high: 1 }[TIER];
 document.documentElement.setAttribute('data-tier', TIER);
 const MAX_PIXEL_RATIO = TIER === 'high' ? Math.min(devicePixelRatio||1, 2) : 1.4;
+/* star dot radius is specified in CSS px and (by design) doesn't scale with
+   devicePixelRatio, but a phone's viewport is only a quarter or so of a
+   desktop's width -- the same CSS-px star ends up looking much bigger
+   relative to that narrow screen. Smaller base size on small viewports
+   keeps stars reading as delicate/scattered rather than big and clumped. */
+const STAR_SIZE = IS_SMALL ? 1.1 : 1.75;
 
 /* ============================================================
    2. UTILITIES
@@ -1539,27 +1545,29 @@ const ConnectionScene = (function(){
   function ensureAmbientStars(){
     if(ambientStars && ambientStarsDims && ambientStarsDims[0]===w && ambientStarsDims[1]===h) return ambientStars;
     ambientStarsDims = [w,h];
-    /* same base radius (1.75, pre dpr-scale) as every ParticleField "dot" star
-       on the site, so this scene's stars read as the same size, not just the
-       same size formula */
+    /* same base radius as every ParticleField "dot" star on the site, so
+       this scene's stars read as the same size, not just the same formula */
     ambientStars = new Array(70).fill(0).map(()=>({
       x: Math.random()*w, y: Math.random()*h,
-      size: 1.75*dpr,
+      size: STAR_SIZE*dpr,
       phase: Math.random()*Math.PI*2,
       speed: 0.4+Math.random()*0.6
     }));
     return ambientStars;
   }
-  function drawAmbientStars(timeSec){
+  function drawAmbientStars(timeSec, p){
     /* soft radial-gradient falloff, same as ParticleField's 'dot' kind --
        a solid-filled circle of the same radius reads noticeably bigger and
-       harder-edged than the gradient dots used everywhere else */
+       harder-edged than the gradient dots used everywhere else.
+       White for the whole story; gold from the firework at the very end
+       (PH.rings_end) onward, matching every scene that follows this one. */
+    const color = p >= PH.rings_end ? '212,175,55' : '248,246,242';
     ensureAmbientStars().forEach(s=>{
       const a = 0.25 + 0.3*(0.5+0.5*Math.sin(timeSec*s.speed + s.phase));
       const r = s.size*3;
       const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
-      grd.addColorStop(0, 'rgba(212,175,55,0.85)');
-      grd.addColorStop(1, 'rgba(212,175,55,0)');
+      grd.addColorStop(0, `rgba(${color},0.85)`);
+      grd.addColorStop(1, `rgba(${color},0)`);
       ctx.globalAlpha = a;
       ctx.fillStyle = grd;
       ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI*2); ctx.fill();
@@ -1572,7 +1580,7 @@ const ConnectionScene = (function(){
     const cx = w/2, cy = h/2;
     const time = performance.now()/1000;
     const p = progress;
-    drawAmbientStars(time);
+    drawAmbientStars(time, p);
 
     if(p < PH.intro_end){
       const pos = orbAt(p);
@@ -2279,17 +2287,21 @@ function initAmbientFields(){
   const fields = [
     /* every "star" field below uses sizeMin===sizeMax on purpose -- a fixed
        size instead of a random range, so stars read as uniform dots across
-       every scene rather than a mix of small and large */
-    ['starsCanvasGate',    { count:220, kind:'dot', color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
-    ['starsCanvasOpening', { count:220, kind:'dot', color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
-    ['munichParticles',    { count:55,  kind:'dot',  color:'212,175,55', speed:0.05, sizeMin:1.75, sizeMax:1.75, driftY:0.35, parallax:0.02 }],
-    ['brideParticles',     { count:150, kind:'dot',  color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
-    ['groomParticles',     { count:150, kind:'dot',  color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
-    ['blessingParticles',  { count:150, kind:'dot',  color:'212,175,55', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
+       every scene rather than a mix of small and large.
+       Color follows the story: white through the whole Munich/Bangalore/
+       Connection arc, gold from the Connection scene's firework finale
+       onward (see drawAmbientStars) -- so everything from here through
+       the ending stays gold, and everything before it stays white. */
+    ['starsCanvasGate',    { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:STAR_SIZE, sizeMax:STAR_SIZE, driftY:0, parallax:0.02 }],
+    ['starsCanvasOpening', { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:STAR_SIZE, sizeMax:STAR_SIZE, driftY:0, parallax:0.02 }],
+    ['munichParticles',    { count:55,  kind:'dot',  color:'248,246,242', speed:0.05, sizeMin:STAR_SIZE, sizeMax:STAR_SIZE, driftY:0.35, parallax:0.02 }],
+    ['brideParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:STAR_SIZE, sizeMax:STAR_SIZE, driftY:0, parallax:0.02 }],
+    ['groomParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:STAR_SIZE, sizeMax:STAR_SIZE, driftY:0, parallax:0.02 }],
+    ['blessingParticles',  { count:150, kind:'dot',  color:'212,175,55', speed:0.015, sizeMin:STAR_SIZE, sizeMax:STAR_SIZE, driftY:0, parallax:0.02 }],
     /* this canvas spans the whole reveal-flow scene (countdown through the
        photo), several screens tall, so it needs a much higher count than a
        single-viewport scene just to keep the same visible density per screen */
-    ['savedateParticles',  { count:320, kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:1.75, sizeMax:1.75, driftY:-0.15, parallax:0.03 }],
+    ['savedateParticles',  { count:320, kind:'dot',  color:'212,175,55',  speed:0.03, sizeMin:STAR_SIZE, sizeMax:STAR_SIZE, driftY:-0.15, parallax:0.03 }],
     ['endingCanvas',           { count:110, kind:'firefly', color:'232,199,122', speed:0.05, sizeMin:0.5, sizeMax:1.3, driftY:-0.25, parallax:0.02 }],
     ['endingCanvasLanterns',   { count:14,  kind:'lantern', color:'212,175,55',  speed:0.06, sizeMin:2.2, sizeMax:4, driftY:-0.35, parallax:0.01 }]
   ];
