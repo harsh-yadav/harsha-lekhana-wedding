@@ -2319,7 +2319,6 @@ function initAmbientFields(){
     ['starsCanvasGate',    { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
     ['starsCanvasOpening', { count:220, kind:'dot', color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
     ['munichParticles',    { count:55,  kind:'dot',  color:'248,246,242', speed:0.05, sizeMin:1.75, sizeMax:1.75, driftY:0.35, parallax:0.02 }],
-    ['bangaloreParticles', { count:55,  kind:'petal', color:'232,151,59', speed:0.10, sizeMin:1.4, sizeMax:2.8, driftY:-0.4, parallax:0.02 }],
     ['brideParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
     ['groomParticles',     { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],
     ['blessingParticles',  { count:150, kind:'dot',  color:'248,246,242', speed:0.015, sizeMin:1.75, sizeMax:1.75, driftY:0, parallax:0.02 }],

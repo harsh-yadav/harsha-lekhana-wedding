@@ -407,13 +407,6 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   color:var(--gold); margin-bottom:14px; opacity:0; transform:translateY(10px);
 }
 
-/* ---------- moonlight ---------- */
-.moon-ambient{
-  position:absolute; top:-8%; left:50%; transform:translateX(-50%); pointer-events:none;
-  width:56vw; height:56vw; max-width:640px; max-height:640px; border-radius:50%;
-  background:radial-gradient(circle, rgba(234,240,246,.10), transparent 68%);
-}
-
 .earth-caption span,
 .earth-distance .km,
 .flip-unit-label{
@@ -713,15 +706,6 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 .city-clouds{ position:absolute; inset:0; opacity:.55; mix-blend-mode:screen; pointer-events:none; }
 .city-birds{ position:absolute; inset:0; pointer-events:none; }
 
-.light-rays{
-  position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:.6;
-  background:repeating-linear-gradient(70deg,
-    rgba(143,184,221,0) 0px, rgba(143,184,221,.06) 2px,
-    rgba(143,184,221,0) 60px, rgba(143,184,221,0) 140px);
-  animation:raysDrift 26s linear infinite;
-}
-@keyframes raysDrift{ from{ background-position:0 0; } to{ background-position:420px 0; } }
-
 .golden-haze{
   position:absolute; inset:0; pointer-events:none;
   background:radial-gradient(ellipse 75% 55% at 50% 72%, rgba(232,151,59,.16), transparent 70%);
@@ -730,10 +714,8 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 @keyframes hazePulse{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
 
 @media (prefers-reduced-motion: reduce){
-  .light-rays{ animation:none; }
   .golden-haze{ animation:none; }
 }
-body.reduced-motion .light-rays{ animation:none; }
 body.reduced-motion .golden-haze{ animation:none; }
 
 /* sits just below the city title baked into the background photo itself
