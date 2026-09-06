@@ -66,7 +66,9 @@ window.WEDDING_CONFIG = wedding;
 
 /* Blessing wall storage/auth — a public client config, not a secret (access
    is controlled by Firestore's own security rules, not by hiding this).
-   Project: harsha-lekhana-wedding. */
+   Project: harsha-lekhana-wedding. The Firestore rules (set in the Firebase
+   console, not in this repo) cap a blessing's text at under 1000 characters
+   — keep that in sync with MAX_LEN in initBlessingWall if either changes. */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyA5nV32XPpoQ02lw6PFe36u6KssnqpblTE",
   authDomain: "harsha-lekhana-wedding.firebaseapp.com",
@@ -2209,7 +2211,11 @@ function initBlessingWall(){
   const errorEl = document.getElementById('blessingError');
   const submitBtn = form.querySelector('.blessing-submit');
   const wall = document.getElementById('blessingWall');
-  const MAX_LEN = 140;
+  /* generous, not "unlimited" -- still a hard ceiling so one bad-faith
+     paste can't write an arbitrarily large document to the database.
+     Matches the Firestore rule's own text.size() < 1000 (see the rules
+     comment near FIREBASE_CONFIG) -- change both together if this moves. */
+  const MAX_LEN = 1000;
 
   const app = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.firestore(app);
@@ -2292,7 +2298,7 @@ function initBlessingWall(){
     submitBtn.disabled = true;
     blessingsRef.add({
       name: name.slice(0, 60),
-      text: text.slice(0, 140),
+      text: text.slice(0, MAX_LEN),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(()=>{
       form.reset();
@@ -2342,6 +2348,12 @@ function initBlessingWall(){
     }
   }
 
+  /* the link itself only exists for someone who loaded the page with
+     ?admin in the URL — a normal guest never sees it, never learns it's
+     there. Firebase's own auth persistence still restores a signed-in
+     session (and its delete buttons) on a later visit without the param;
+     this only gates the sign-in/sign-out UI's visibility, not the session. */
+  if(new URLSearchParams(location.search).has('admin')) adminLink.hidden = false;
   adminLink.addEventListener('click', ()=>{ adminPanel.hidden = !adminPanel.hidden; });
   loginForm.addEventListener('submit', e=>{
     e.preventDefault();

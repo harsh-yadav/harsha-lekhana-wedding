@@ -401,9 +401,9 @@
       <label class="sr-only" for="blessingName">Your name</label>
       <input class="blessing-name" id="blessingName" type="text" maxlength="60" placeholder="Your name" required>
       <label class="sr-only" for="blessingInput">Your blessing</label>
-      <textarea class="blessing-input" id="blessingInput" rows="3" maxlength="140" placeholder="Write a short blessing for the couple..." required></textarea>
+      <textarea class="blessing-input" id="blessingInput" rows="3" maxlength="1000" placeholder="Write a blessing for the couple..." required></textarea>
       <div class="blessing-form-row">
-        <span class="blessing-counter" id="blessingCounter" aria-live="polite">140 characters left</span>
+        <span class="blessing-counter" id="blessingCounter" aria-live="polite">1000 characters left</span>
         <button type="submit" class="blessing-submit">Add Blessing</button>
       </div>
       <p class="blessing-error" id="blessingError" role="alert" hidden></p>
@@ -411,9 +411,11 @@
 
     <div class="blessing-wall" id="blessingWall" aria-live="polite" aria-label="Blessings from guests"></div>
 
-    <!-- deliberately quiet -- guests have no reason to notice this, the
-         couple knows to look for it. See initBlessingAdmin in script.js. -->
-    <button type="button" class="blessing-admin-link" id="blessingAdminLink">Manage blessings</button>
+    <!-- not just visually quiet -- entirely absent from the page for a
+         normal visitor. initBlessingWall only reveals blessingAdminLink at
+         all when the URL carries ?admin=1 (see wedding.adminQueryParam),
+         so there's nothing here for a guest to notice or wonder about. -->
+    <button type="button" class="blessing-admin-link" id="blessingAdminLink" hidden>Manage blessings</button>
     <div class="blessing-admin-panel" id="blessingAdminPanel" hidden>
       <form id="blessingLoginForm" autocomplete="on">
         <input type="email" id="blessingAdminEmail" placeholder="Admin email" autocomplete="username" required>
