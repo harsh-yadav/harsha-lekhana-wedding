@@ -23,8 +23,10 @@ const wedding = {
   mapLink:"https://maps.app.goo.gl/HZXWvWaQQnxGUJPHA",
   poster:"poster.png",
   /* one is picked at random per visit (see initAudio) and looped for the
-     whole session -- add more filenames here to grow the pool */
-  music:["music.mp3", "music1.mp3"],
+     whole session -- add more filenames here to grow the pool. Order here
+     is just the couple's stated priority (1,2,5,4,0,3); the pick itself is
+     uniform random, not weighted by position. */
+  music:["music1.mp3", "music2.mp3", "music5.mp3", "music4.mp3", "music0.mp3", "music3.mp3"],
   bridePhoto:"Bride.jpg",
   groomPhoto:"groom.jpg",
   theme:{
