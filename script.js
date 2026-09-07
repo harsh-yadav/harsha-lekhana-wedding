@@ -22,7 +22,9 @@ const wedding = {
   venueAddress:"Hoskote, Bangalore, India",
   mapLink:"https://maps.app.goo.gl/HZXWvWaQQnxGUJPHA",
   poster:"poster.png",
-  music:"music.mp3",
+  /* one is picked at random per visit (see initAudio) and looped for the
+     whole session -- add more filenames here to grow the pool */
+  music:["music.mp3", "music1.mp3"],
   bridePhoto:"Bride.jpg",
   groomPhoto:"groom.jpg",
   theme:{
@@ -2618,7 +2620,8 @@ function tickCityTimes(){
    gesture, so that's the one thing that starts playback. */
 function initAudio(){
   const btn = document.getElementById('audioToggle');
-  if(!wedding.features.musicToggle || !wedding.music){ btn.remove(); return; }
+  const tracks = Array.isArray(wedding.music) ? wedding.music : (wedding.music ? [wedding.music] : []);
+  if(!wedding.features.musicToggle || !tracks.length){ btn.remove(); return; }
   const audio = new Audio();
   /* most visitors are on a phone, often on cellular, and roughly half of
      them decline music at the gate — preloading the file for everyone
@@ -2628,7 +2631,9 @@ function initAudio(){
   audio.loop = true; audio.volume = 0.35; audio.preload = 'none';
   let broken = false;
   audio.addEventListener('error', ()=>{ broken = true; btn.remove(); }, { once:true });
-  audio.src = wedding.music;
+  /* picked once per page load and looped for the whole visit, not reshuffled
+     mid-session -- this is background music for one visit, not a playlist */
+  audio.src = tracks[Math.floor(Math.random()*tracks.length)];
 
   /* what the visitor asked for, kept separate from what the element is doing
      right now — the two diverge whenever the page is in the background */
