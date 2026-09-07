@@ -2215,7 +2215,7 @@ function initBlessingWall(){
   const dotsWrap = document.getElementById('blessingDots');
   const prevBtn = document.getElementById('blessingPrev');
   const nextBtn = document.getElementById('blessingNext');
-  const SLIDE_MS = 6500;
+  const SLIDE_MS = 4000;
   let slides = [], dots = [], index = 0, timer = null, paused = false, currentId = null, inView = false;
 
   function stopAuto(){ if(timer){ clearInterval(timer); timer = null; } }
