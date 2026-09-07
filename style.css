@@ -1358,54 +1358,36 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .earth-distance .lbl{ margin-top:9px; }
 }
 
-/* ---------- portrait: fit the whole skyline ----------
-   Both photos are ~1.9:1 (Munich 1.958, Bangalore 1.823) and carry their own
-   name lockup. `cover` on a portrait frame scales by height, so only the middle
-   ~24% of the width was ever on screen: the skyline arrived pre-cropped to a
-   couple of buildings and the lockup was sliced through the middle
-   ("BANGALOR"). Below 4:5 the photo is fitted to the full width instead and
-   set on the bottom edge, so the whole skyline is there. Three consequences,
-   handled by the three extra layers below:
+/* ---------- portrait: the city photos' baked-in titles ----------
+   Both skyline photos are ~1.9:1 and carry their own name lockup, which spans
+   about a third of the image width. `cover` on a portrait frame scales the photo
+   by height, so only the middle ~24% of its width is ever on screen and the
+   lockup is sliced through the middle ("BANGALOR"). Below 4:5 we therefore wash
+   the lockup out and set the name as real text, which fits any width.
 
-   1. At full width the photo is only 100vw/ratio tall, so the rest of the
-      frame is filled with a flat #f3f3f3 — the exact value each photo's own
-      sky starts at — and the band ends in a colour match rather than a seam.
-      The scene tint on top turns both into the same blue/amber wash as before,
-      so the mood is unchanged.
-   2. The lockup is whole now but far too small to read, so it is still washed
-      out and the name still comes from real text (.city-title). The wash is
-      sized and pinned to the band (100% x calc(100vw/ratio), bottom) rather
-      than to the element, so its percentage stops keep landing on exactly the
-      same part of the image as they did under `cover` — cleared by 29%
-      (Bangalore's tallest spire) and 30.5% (Munich's).
-   3. The tint's opaque hand-off to the story section is pushed from 80% to
-      88%, so it closes over the empty ground below the skyline instead of
-      washing out the buildings themselves.
-
-   no-repeat on every layer matters here: the band is shorter than the frame,
-   so a repeating photo layer would tile the skyline up the screen. */
+   The wash works because each photo's own sky is flat white behind the title
+   (sampled: #f3 at the very top through #fff from 19% down), so a gradient in
+   those exact values is invisible against it — it just erases the lettering. The
+   stops are percentages of the element, which map 1:1 onto the image here:
+   below 1.82:1, `cover` scales by height, so image height == element height.
+   Cleared by 29% (Bangalore's tallest spire) and 30% (Munich's), and both sit
+   under the same scene tint as before, so nothing else about the mood changes. */
 @media (max-aspect-ratio: 4/5){
   #scene-munich .city-sky{
     background:
-      linear-gradient(180deg, rgba(11,20,32,.72) 0%, rgba(20,34,54,.55) 45%,
-                              rgba(34,57,84,.42) 88%, rgba(11,20,32,1) 100%)
-        center/auto no-repeat,
+      linear-gradient(180deg, rgba(11,20,32,.72) 0%, rgba(20,34,54,.55) 45%, rgba(38,64,92,.4) 80%, rgba(11,20,32,1) 100%),
       linear-gradient(180deg, #f3f3f3 0%, #f4f4f4 2%, #f7f7f7 5%, #fbfbfb 10%,
-                              #fff 19%, #fff 27%, rgba(255,255,255,0) 30.5%)
-        center bottom/100% calc(100vw / 1.958) no-repeat,
-      url('munichline.jpg') center bottom/100% auto no-repeat,
-      linear-gradient(180deg, #f3f3f3, #f3f3f3) center/auto no-repeat;
+                              #fff 19%, #fff 27%, rgba(255,255,255,0) 30.5%),
+      url('munichline.jpg') center/cover no-repeat,
+      linear-gradient(180deg,#0B1420 0%, #142236 45%, #26405c 100%);
   }
   #scene-bangalore .city-sky{
     background:
-      linear-gradient(180deg, rgba(26,15,8,.72) 0%, rgba(58,29,15,.55) 45%,
-                              rgba(104,56,20,.42) 88%, rgba(26,15,8,1) 100%)
-        center/auto no-repeat,
+      linear-gradient(180deg, rgba(26,15,8,.72) 0%, rgba(58,29,15,.55) 45%, rgba(122,66,24,.4) 80%, rgba(26,15,8,1) 100%),
       linear-gradient(180deg, #f3f3f3 0%, #f4f4f4 2%, #f7f7f7 5%, #fbfbfb 10%,
-                              #fff 19%, #fff 25.5%, rgba(255,255,255,0) 29.3%)
-        center bottom/100% calc(100vw / 1.8232) no-repeat,
-      url('bangalore_line.jpg') center bottom/100% auto no-repeat,
-      linear-gradient(180deg, #f3f3f3, #f3f3f3) center/auto no-repeat;
+                              #fff 19%, #fff 25.5%, rgba(255,255,255,0) 29.3%),
+      url('bangalore_line.jpg') center/cover no-repeat,
+      linear-gradient(180deg,#1a0f08 0%, #3a1d0f 45%, #7a4218 100%);
   }
 
   .city-title{ display:block; width:max-content; max-width:100%; margin:0 auto 26px; }
