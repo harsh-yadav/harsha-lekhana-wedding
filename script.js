@@ -22,10 +22,10 @@ const wedding = {
   venueAddress:"Hoskote, Bangalore, India",
   mapLink:"https://maps.app.goo.gl/HZXWvWaQQnxGUJPHA",
   poster:"poster.png",
-  /* one is picked at random per visit (see initAudio) and looped for the
-     whole session -- add more filenames here to grow the pool. Order here
-     is just the couple's stated priority (1,2,5,4,0,3); the pick itself is
-     uniform random, not weighted by position. */
+  /* one is picked per visit (see initAudio) and looped for the whole
+     session -- add more filenames here to grow the pool. This is the
+     couple's stated priority order (1,2,5,4,0,3), and the pick is weighted
+     to favor it: earlier entries play more often, not just listed first. */
   music:["music1.mp3", "music2.mp3", "music5.mp3", "music4.mp3", "music0.mp3", "music3.mp3"],
   bridePhoto:"Bride.jpg",
   groomPhoto:"groom.jpg",
@@ -2634,8 +2634,19 @@ function initAudio(){
   let broken = false;
   audio.addEventListener('error', ()=>{ broken = true; btn.remove(); }, { once:true });
   /* picked once per page load and looped for the whole visit, not reshuffled
-     mid-session -- this is background music for one visit, not a playlist */
-  audio.src = tracks[Math.floor(Math.random()*tracks.length)];
+     mid-session -- this is background music for one visit, not a playlist.
+     Weighted by wedding.music's own order: track 0 (highest priority) is n
+     times as likely to be picked as the last one, track 1 is n-1 times as
+     likely, and so on down to the last track's single share. */
+  const n = tracks.length;
+  let roll = Math.random() * (n*(n+1)/2);
+  let pick = tracks[n-1];
+  for(let i=0;i<n;i++){
+    const weight = n-i;
+    if(roll < weight){ pick = tracks[i]; break; }
+    roll -= weight;
+  }
+  audio.src = pick;
 
   /* what the visitor asked for, kept separate from what the element is doing
      right now — the two diverge whenever the page is in the background */
