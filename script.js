@@ -2054,13 +2054,11 @@ function initScratchReveal(){
   const root = document.getElementById('scratchReveal');
   const card = document.getElementById('scratchCard');
   const canvas = document.getElementById('scratchCardCanvas');
-  /* the date now sits above the card rather than behind the foil, so it is
-     no longer part of what the interaction gates — but it stays config-driven */
-  const dateEl = document.getElementById('scratchDate');
+  const dateEl = document.getElementById('scratchCardDate');
   const hint = document.getElementById('scratchRevealHint');
-  if(!root || !card || !canvas) return;
+  if(!root || !card || !canvas || !dateEl) return;
 
-  if(dateEl && dateEl.textContent.trim() === '') dateEl.textContent = wedding.weddingDateDisplay;
+  if(dateEl.textContent.trim() === '') dateEl.textContent = wedding.weddingDateDisplay;
 
   /* willReadFrequently: scratchedRatio() calls getImageData on every
      pointermove — without this hint the browser silently drops the
@@ -2089,7 +2087,7 @@ function initScratchReveal(){
     ctx.font = '600 13px ' + getComputedStyle(document.body).fontFamily;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('SCRATCH TO REVEAL THE COUNTDOWN', w/2, h/2);
+    ctx.fillText('SCRATCH TO REVEAL THE DATE', w/2, h/2);
   }
 
   function resize(){
@@ -2211,18 +2209,61 @@ function initBlessingWall(){
     errorEl.hidden = !msg;
   }
 
+  /* ---- the slideshow: one blessing at a time, auto-advancing ---- */
+  const show = document.getElementById('blessingShow');
+  const controls = document.getElementById('blessingControls');
+  const dotsWrap = document.getElementById('blessingDots');
+  const prevBtn = document.getElementById('blessingPrev');
+  const nextBtn = document.getElementById('blessingNext');
+  const SLIDE_MS = 6500;
+  let slides = [], dots = [], index = 0, timer = null, paused = false, currentId = null, inView = false;
+
+  function stopAuto(){ if(timer){ clearInterval(timer); timer = null; } }
+  function startAuto(){
+    stopAuto();
+    /* nothing to rotate through, the scene isn't on screen, or the visitor
+       asked for no motion */
+    if(REDUCED_MOTION || slides.length < 2 || !inView) return;
+    timer = setInterval(()=>{ if(!paused) goTo(index + 1); }, SLIDE_MS);
+  }
+  function goTo(n){
+    if(!slides.length) return;
+    index = (n % slides.length + slides.length) % slides.length;
+    slides.forEach((s, i)=> s.classList.toggle('is-active', i === index));
+    dots.forEach((d, i)=>{
+      d.classList.toggle('is-active', i === index);
+      d.setAttribute('aria-current', i === index ? 'true' : 'false');
+    });
+    currentId = slides[index].dataset.id || null;
+  }
+  /* the cards are stacked, so the viewport has to be as tall as the tallest
+     of them — otherwise this centred scene would resize under the reader
+     every time a longer or shorter blessing came around */
+  function sizeViewport(){
+    if(!slides.length){ wall.style.height = ''; return; }
+    let tallest = 0;
+    slides.forEach(s=>{ tallest = Math.max(tallest, s.offsetHeight); });
+    wall.style.height = tallest + 'px';
+  }
+
   function renderAll(docs){
+    stopAuto();
     wall.innerHTML = '';
+    dotsWrap.innerHTML = '';
+    slides = []; dots = [];
     if(!docs.length){
+      wall.style.height = '';
+      controls.hidden = true;
       const empty = document.createElement('p');
       empty.className = 'blessing-wall-empty';
       empty.textContent = 'Be the first to leave a blessing.';
       wall.appendChild(empty);
       return;
     }
-    docs.forEach(({ name, text })=>{
+    docs.forEach(({ id, name, text }, i)=>{
       const card = document.createElement('div');
       card.className = 'blessing-card';
+      if(id) card.dataset.id = id;
       const p = document.createElement('p');
       p.textContent = text;
       const nameEl = document.createElement('p');
@@ -2231,14 +2272,64 @@ function initBlessingWall(){
       card.appendChild(p);
       card.appendChild(nameEl);
       wall.appendChild(card);
+      slides.push(card);
+
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'blessing-dot';
+      dot.setAttribute('aria-label', 'Blessing ' + (i + 1) + ' of ' + docs.length);
+      dot.addEventListener('click', ()=>{ goTo(i); startAuto(); });
+      dotsWrap.appendChild(dot);
+      dots.push(dot);
     });
+    controls.hidden = docs.length < 2;
+    /* someone else submitting shouldn't yank the card being read off screen,
+       so hold position by document id rather than by index */
+    const keep = currentId ? docs.findIndex(d=> d.id === currentId) : -1;
+    goTo(keep > -1 ? keep : 0);
+    sizeViewport();
+    startAuto();
   }
+
+  prevBtn.addEventListener('click', ()=>{ goTo(index - 1); startAuto(); });
+  nextBtn.addEventListener('click', ()=>{ goTo(index + 1); startAuto(); });
+  /* hold still while it's being read or operated */
+  show.addEventListener('pointerenter', ()=>{ paused = true; });
+  show.addEventListener('pointerleave', ()=>{ paused = false; });
+  show.addEventListener('focusin', ()=>{ paused = true; });
+  show.addEventListener('focusout', ()=>{ paused = false; });
+
+  /* swipe, since this is a phone-first page — pan-y in the CSS keeps the
+     vertical half of the gesture with the page */
+  let swipeX = null;
+  wall.addEventListener('pointerdown', e=>{ swipeX = e.clientX; });
+  wall.addEventListener('pointerup', e=>{
+    if(swipeX === null) return;
+    const dx = e.clientX - swipeX;
+    swipeX = null;
+    if(Math.abs(dx) > 40){ goTo(index + (dx < 0 ? 1 : -1)); startAuto(); }
+  });
+  wall.addEventListener('pointercancel', ()=>{ swipeX = null; });
+
+  /* idle CPU stays at zero when the scene is off screen or the tab is away */
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'hidden') stopAuto(); else startAuto();
+  });
+  onVisible(show, ()=>{ inView = true; startAuto(); });
+  new IntersectionObserver(es=> es.forEach(e=>{
+    if(!e.isIntersecting){ inView = false; stopAuto(); }
+  }), { threshold:0 }).observe(show);
+
+  window.addEventListener('resize', sizeViewport, { passive:true });
+  /* the display face lands after first paint and changes the measured
+     heights with it */
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(sizeViewport);
 
   /* live: fires immediately with whatever's cached, then again whenever
      the collection actually changes — for any guest, from any device,
      including one someone else just submitted from */
   blessingsRef.orderBy('createdAt', 'desc').limit(100).onSnapshot(snap=>{
-    renderAll(snap.docs.map(d=> d.data()));
+    renderAll(snap.docs.map(d=> Object.assign({ id:d.id }, d.data())));
   }, err=>{
     console.error('blessing wall read failed', err);
   });
@@ -2360,7 +2451,7 @@ function setupReveals(){
      fades everything back out, and scrolling down into it again fades it
      back in, same as every other .will-reveal on the site. */
   if(REDUCED_MOTION){
-    gsap.set(['.ending-line','.ending-invite','.ending-names','.ending-date','.ics-link'], { opacity:1, y:0 });
+    gsap.set(['.ending-line','.ending-distance','.ending-invite','.ending-names','.ending-date','.ics-link'], { opacity:1, y:0 });
   } else {
     /* strictly top-to-bottom — the invitation sits above the names, so it has
        to arrive before them; revealing it later made the block assemble out
@@ -2370,6 +2461,7 @@ function setupReveals(){
       scrollTrigger:{ trigger:'#scene-ending', start:'top 60%', toggleActions:'play none none reverse' }
     })
       .to('.ending-line', { opacity:1, duration:1.1, ease:'power2.out', stagger:0.35 })
+      .to('.ending-distance', { opacity:1, y:0, duration:1 }, '+=0.15')
       .to('.ending-invite', { opacity:1, y:0, duration:1 }, '+=0.2')
       .to('.ending-names', { opacity:1, y:0, duration:1 }, '+=0.25')
       .to('.ending-date', { opacity:1, y:0, duration:.8 }, '-=0.45')
@@ -2466,19 +2558,25 @@ function setupPinnedScenes(){
       onLeaveBack: earthAutoplay.onLeaveBack
     }));
 
-    /* target is 1, not 0.9 — stopping autoplay at 0.9 used to leave visitors
-       stuck mid-pin after the last beat with nothing on screen changing and
-       no cue that scrolling further would release them into the next scene. */
+    /* target is 1, not 0.9 — the countdown itself only starts fading in at
+       progress 0.965 (see below), so stopping autoplay at 0.9 used to leave
+       visitors stuck mid-pin after the last beat with nothing on screen
+       changing and no cue that scrolling further would reveal the
+       countdown and release them into the next scene. */
+    const connectionCountdown = document.getElementById('scene-countdown');
     const countdownCue = document.getElementById('countdownScrollCue');
     const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800 });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
         connectionAutoplay.setSelf(self);
         ConnectionScene.update(self.progress);
-        if(countdownCue){
-          /* only once the finale has essentially finished playing out */
+        if(connectionCountdown){
           const t = clamp01((self.progress - 0.965) / 0.035);
-          countdownCue.classList.toggle('is-visible', t > 0.9);
+          connectionCountdown.style.opacity = String(t);
+          connectionCountdown.style.pointerEvents = t > 0.5 ? 'auto' : 'none';
+          /* only once the countdown has essentially finished revealing —
+             not while it's still fading in */
+          if(countdownCue) countdownCue.classList.toggle('is-visible', t > 0.9);
         }
       },
       onEnter: connectionAutoplay.onEnter,
@@ -2497,6 +2595,8 @@ function setupPinnedScenes(){
     document.getElementById('earthDistance').classList.add('is-visible');
     document.getElementById('connectionCaption').style.opacity = 1;
     document.getElementById('connectionCaption').style.transform = 'none';
+    const connectionCountdown = document.getElementById('scene-countdown');
+    if(connectionCountdown){ connectionCountdown.style.opacity = 1; connectionCountdown.style.pointerEvents = 'auto'; }
     const countdownCue = document.getElementById('countdownScrollCue');
     if(countdownCue) countdownCue.classList.add('is-visible');
   }

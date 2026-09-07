@@ -325,9 +325,18 @@
         <p class="connection-caption-date" id="connectionCaptionDate"></p>
         <p class="connection-caption-text" id="connectionCaptionText">A new chapter begins.</p>
       </div>
-      <!-- the countdown itself now lives under the scratch card in the Save
-           the Date scene, which is what that interaction reveals; this scene
-           closes on its own caption and the cue below. -->
+      <div class="countdown-block connection-countdown" id="scene-countdown">
+        <!-- the exact date used to be spelled out here, right below the
+             ticking countdown -- but the scratch-reveal card later in the
+             Save the Date scene exists specifically to be the first place
+             a visitor learns the actual date, and this said it first,
+             several scenes earlier. The countdown itself still counts down
+             (and #countdownMarried below still resolves once it hits
+             zero), just without naming the day out loud before then. -->
+        <p class="connection-countdown-heading">The day two journeys become one.</p>
+        <div class="countdown-grid" id="countdownGrid"></div>
+        <div class="countdown-married" id="countdownMarried">A new chapter begins.</div>
+      </div>
       <div class="countdown-scroll-hint" id="countdownScrollCue" aria-hidden="true">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </div>
@@ -347,23 +356,14 @@
         <p class="details-intro will-reveal">With the blessings of both families, Harsha&nbsp;and&nbsp;Lekhana invite you to celebrate their wedding.</p>
 
         <!-- a small tactile delight before the formal poster reveal — see
-             initScratchReveal in script.js. The date and the city are plain
-             text above the card, never behind it: no guest should have to
-             discover an interaction to learn when or where the wedding is.
-             What the foil hides is the live countdown, which is anticipation
-             rather than information. Under reduced motion, or with no canvas
-             2D, the foil is dropped entirely and the countdown simply shows. -->
+             initScratchReveal in script.js. Falls back to the date shown
+             plainly (no canvas, no interaction) under reduced motion, and
+             degrades the same way if canvas 2D isn't available. -->
         <div class="scratch-reveal will-reveal" id="scratchReveal">
-          <p class="eyebrow scratch-reveal-eyebrow">Save the date</p>
-          <p class="scratch-date" id="scratchDate">30 November 2026</p>
-          <p class="scratch-place">Bangalore</p>
-          <h3 class="scratch-reveal-heading">Scratch to reveal the countdown</h3>
+          <p class="eyebrow scratch-reveal-eyebrow">A little secret</p>
+          <h3 class="scratch-reveal-heading">Scratch to reveal the date</h3>
           <div class="scratch-card" id="scratchCard">
-            <div class="countdown-block scratch-card-reveal">
-              <p class="scratch-card-line">The day two journeys become one.</p>
-              <div class="countdown-grid" id="countdownGrid"></div>
-              <div class="countdown-married" id="countdownMarried">A new chapter begins.</div>
-            </div>
+            <p class="scratch-card-date" id="scratchCardDate">30 November 2026</p>
             <canvas class="scratch-card-canvas" id="scratchCardCanvas" aria-hidden="true"></canvas>
           </div>
           <p class="scratch-reveal-hint" id="scratchRevealHint">Use your finger or mouse to scratch</p>
@@ -410,7 +410,24 @@
       <p class="blessing-error" id="blessingError" role="alert" hidden></p>
     </form>
 
-    <div class="blessing-wall" id="blessingWall" aria-live="polite" aria-label="Blessings from guests"></div>
+    <!-- the blessings play one at a time rather than tiling into a wall, so
+         each one gets read instead of skimmed. Auto-advances until a guest
+         takes over with the arrows, the dots, or a swipe; see
+         initBlessingWall in script.js. No aria-live here on purpose — a
+         region that rotates on a timer would otherwise announce itself
+         over and over. -->
+    <div class="blessing-show" id="blessingShow" aria-roledescription="carousel" aria-label="Blessings from guests">
+      <div class="blessing-wall" id="blessingWall"></div>
+      <div class="blessing-controls" id="blessingControls" hidden>
+        <button type="button" class="blessing-arrow" id="blessingPrev" aria-label="Previous blessing">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="blessing-dots" id="blessingDots"></div>
+        <button type="button" class="blessing-arrow" id="blessingNext" aria-label="Next blessing">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
   </section>
 
   <!-- ENDING -->
@@ -423,8 +440,10 @@
       <div class="ending-lines">
         <p class="ending-line">From one city to another. From one chapter to the next. Two lives. Two journeys.</p>
       </div>
-      <!-- the distance statement now belongs to the Living Earth scene alone
-           (see .earth-distance) rather than being said twice on one page -->
+      <!-- one continuous sentence: the tail was a bare <p> outside
+           .ending-distance, so it fell back to body type at a smaller size,
+           missed the scroll reveal, and sat on a line of its own -->
+      <p class="ending-distance">7,165 kilometres apart from each other, <span class="ending-distance-zero">striving for a journey of togetherness.</span></p>
       <p class="ending-invite">Looking forward to sharing this beautiful beginning with you.</p>
       <h2 class="ending-names">Harsha <span class="amp">&#9829;</span> Lekhana</h2>
       <div class="ending-date">30 November 2026 &middot; Bangalore</div>

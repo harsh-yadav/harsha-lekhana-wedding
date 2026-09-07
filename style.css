@@ -775,6 +775,19 @@ body.reduced-motion .golden-haze{ animation:none; }
      break the other short-caption elements sitewide already guard against */
   text-wrap:balance;
 }
+.connection-countdown{
+  position:absolute; left:0; right:0; bottom:20%; z-index:6;
+  opacity:0; pointer-events:none;
+}
+/* a full sentence doing the same job as the story-beat captions above it in
+   this scene (.connection-caption-text) — given the matching italic voice
+   instead of the caps-label treatment its old sibling markup implied */
+.connection-countdown-heading{
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:var(--caps-size); letter-spacing:.01em;
+  color:var(--accent); margin:0 0 18px; text-shadow:0 1px 8px rgba(0,0,0,.65);
+}
+
 /* ============================================================
    SCENES 9-11 MERGED — SAVE THE DATE / COUNTDOWN / DETAILS
    ============================================================ */
@@ -821,52 +834,28 @@ body.reduced-motion .golden-haze{ animation:none; }
   background:linear-gradient(90deg, transparent, rgba(var(--gold-rgb),.8), transparent);
 }
 /* ============================================================
-   SCRATCH-TO-REVEAL COUNTDOWN CARD — a small tactile beat between the
+   SCRATCH-TO-REVEAL DATE CARD — a small tactile beat between the
    invitation line and the poster. See initScratchReveal in script.js.
-   The date and city sit above the card as ordinary text; only the live
-   countdown is behind the foil, so nothing a guest actually needs is
-   ever conditional on finding the interaction.
    ============================================================ */
 .scratch-reveal{ margin:5vh auto 0; display:flex; flex-direction:column; align-items:center; }
 .scratch-reveal-eyebrow{ margin:0 0 10px; }
-/* the two lines that must always be readable — the date in the same display
-   italic the poster and ending use for it, the city a quiet gold caps line
-   under it, so they read as one lockup rather than two stacked sentences */
-.scratch-date{
-  font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(1.625rem, 4.4vw, 2.375rem); color:var(--ivory);
-  margin:0; letter-spacing:.01em; text-align:center;
-}
-.scratch-place{
-  font-family:var(--font-body); font-size:var(--caps-size);
-  letter-spacing:.3em; text-transform:uppercase; color:var(--accent);
-  margin:10px 0 0; text-align:center;
-}
 .scratch-reveal-heading{
   font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(1.25rem, 3vw, 1.75rem); color:var(--ivory); margin:3.4vh 0 3vh;
+  font-size:clamp(1.25rem, 3vw, 1.75rem); color:var(--ivory); margin:0 0 3vh;
   text-align:center;
 }
-/* sized by its own content (the countdown) rather than a fixed box, so the
-   foil covers exactly what it hides at every breakpoint — including the
-   2x2 countdown grid the narrowest phones switch to */
 .scratch-card{
-  position:relative;
-  /* 620 rather than a tighter cap: at desktop the four flip cards top out at
-     4x104 + 3x28 = 500, and with the padding either side that needs ~562 to
-     stay on one row — a lower ceiling wraps the countdown into 2x2 */
-  width:fit-content; min-width:min(300px, 84vw); max-width:min(620px, 92vw);
-  padding:clamp(18px,2.6vw,26px) clamp(20px,3vw,30px);
-  border-radius:12px; overflow:hidden; background:#0d0b08;
+  position:relative; width:min(340px, 82vw); height:132px;
+  border-radius:12px; overflow:hidden;
   border:1px solid rgba(var(--gold-rgb),.3);
   box-shadow:0 20px 44px rgba(0,0,0,.5);
 }
-.scratch-card-reveal .countdown-grid{ margin-top:12px; }
-/* the countdown's own framing line, revealed with it */
-.scratch-card-line{
+.scratch-card-date{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  margin:0; background:#0d0b08;
   font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:var(--caps-size); letter-spacing:.01em;
-  color:var(--accent); margin:0;
+  font-size:clamp(1.375rem, 3.4vw, 1.75rem); color:var(--gold);
+  letter-spacing:.02em;
 }
 .scratch-card-canvas{
   position:absolute; inset:0; width:100%; height:100%;
@@ -1018,21 +1007,58 @@ body.reduced-motion .golden-haze{ animation:none; }
    a guest has just written something personal */
 .blessing-submit.is-sent{ background:var(--accent); }
 
+.blessing-show{
+  width:100%; max-width:620px;
+  display:flex; flex-direction:column; align-items:center; gap:20px;
+}
+/* the slide viewport. Its height is set from the tallest card by
+   initBlessingWall — the cards are stacked on top of one another so they can
+   cross-fade, and without a fixed height the whole centred scene would
+   re-flow every time a longer or shorter blessing came up. pan-y so a
+   vertical scroll over the card still scrolls the page; only the sideways
+   part of the gesture belongs to the slideshow. */
 .blessing-wall{
-  display:flex; flex-wrap:wrap; justify-content:center; gap:14px;
-  width:100%; max-width:760px;
+  position:relative; width:100%; min-height:118px; touch-action:pan-y;
 }
 .blessing-card{
-  flex:1 1 220px; max-width:280px;
+  position:absolute; top:0; left:0; width:100%;
   background:rgba(255,255,255,.03);
   border:1px solid rgba(var(--gold-rgb),.2); border-radius:10px;
-  padding:20px 18px; text-align:left;
-  opacity:0; transform:translateY(10px);
-  animation:blessingIn .5s var(--ease-out) forwards;
+  padding:24px 22px; text-align:left;
+  opacity:0; visibility:hidden; transform:translateY(8px);
+  transition:opacity .55s var(--ease-out), transform .55s var(--ease-out), visibility 0s linear .55s;
 }
-@keyframes blessingIn{ to{ opacity:1; transform:translateY(0); } }
-@media (prefers-reduced-motion: reduce){ .blessing-card{ animation:none; opacity:1; transform:none; } }
-body.reduced-motion .blessing-card{ animation:none; opacity:1; transform:none; }
+.blessing-card.is-active{
+  opacity:1; visibility:visible; transform:translateY(0);
+  transition-delay:0s, 0s, 0s; z-index:2;
+}
+@media (prefers-reduced-motion: reduce){ .blessing-card{ transition:none; } }
+body.reduced-motion .blessing-card{ transition:none; }
+
+.blessing-controls{ display:flex; align-items:center; gap:14px; }
+.blessing-arrow{
+  width:38px; height:38px; border-radius:50%; padding:0;
+  background:transparent; border:1px solid rgba(var(--gold-rgb),.3);
+  color:var(--gold); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .3s var(--ease-out), background .3s var(--ease-out);
+}
+.blessing-arrow svg{ width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+@media (hover:hover){ .blessing-arrow:hover{ border-color:rgba(var(--gold-rgb),.75); background:rgba(var(--gold-rgb),.08); } }
+.blessing-dots{ display:flex; align-items:center; gap:2px; }
+/* a 7px dot with a 20px target around it — the dots are the secondary
+   control (the arrows are the tappable ones) but still shouldn't be a
+   pixel hunt on a phone */
+.blessing-dot{
+  width:20px; height:20px; padding:0; border:0; background:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.blessing-dot::before{
+  content:''; width:7px; height:7px; border-radius:50%;
+  background:rgba(248,246,242,.28);
+  transition:background .3s var(--ease-out), transform .3s var(--ease-out);
+}
+.blessing-dot.is-active::before{ background:var(--gold); transform:scale(1.35); }
 .blessing-card::before{
   content:'\2766'; display:block; color:var(--gold); font-size:1.125rem; margin-bottom:8px; opacity:.8;
 }
@@ -1067,6 +1093,14 @@ body.reduced-motion .blessing-card{ animation:none; opacity:1; transform:none; }
      lines in this scene */
   text-wrap:balance;
 }
+.ending-distance{
+  font-family:var(--font-mono); font-size:clamp(1rem,2vw,1.375rem); letter-spacing:.1em;
+  color:rgba(248,246,242,.6); opacity:0; transform:translateY(14px); margin:3vh 0 0;
+  font-variant-numeric:tabular-nums; text-wrap:balance;
+}
+/* the tail of the same sentence, so it inherits the same size and flows
+   straight on — only the colour and weight separate the two halves */
+.ending-distance-zero{ color:var(--gold); font-weight:500; letter-spacing:.14em; }
 /* the invitation is the one spoken line in the ending, so it's set in the
    display italic rather than the small sans it used to use — at 46ch of
    body text it read as a caption and broke mid-phrase, orphaning "with
@@ -1158,6 +1192,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .earth-distance{ bottom:calc(42px + env(safe-area-inset-bottom)); }
 
   .connection-caption{ bottom:20%; max-width:88vw; }
+  .connection-countdown{ bottom:17%; }
   .countdown-grid{ gap:10px; }
 
   #scene-munich .city-content{ top:24%; }
@@ -1186,10 +1221,6 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .flip-face{ font-size:clamp(1.625rem,9vw,2.375rem); }
   .flip-unit{ gap:9px; }
   .countdown-grid{ gap:8px; }
-  /* tighter gutters than the card's default: the countdown is now inside it,
-     and at ~320-340px the wider padding was the difference between four
-     cards on one row and an uneven 2+2 wrap */
-  .scratch-card{ padding-left:12px; padding-right:12px; }
   .details-card{ padding:26px 18px; }
   .connection-caption{ bottom:18%; }
   .connection-caption-text{ font-size:clamp(1.0625rem,5.2vw,1.375rem); }
@@ -1208,6 +1239,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .details-card{ padding:22px 16px; }
   .ending-line{ font-size:1.125rem; }
   .ending-names{ font-size:1.625rem; }
+  .ending-distance{ font-size:.875rem; letter-spacing:.06em; }
   .poster-frame{ width:88vw; }
 }
 
@@ -1254,6 +1286,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .connection-caption{ bottom:13%; }
   .connection-caption-text{ font-size:clamp(1rem,3.4vh,1.4375rem); }
   .connection-caption-date{ margin-bottom:7px; }
+  .connection-countdown{ bottom:11%; }
   .flip-card{ width:clamp(50px,9vh,72px); height:clamp(60px,11vh,88px); }
   .flip-face{ font-size:clamp(1.5rem,6vh,2.25rem); }
   .opening-greeting-text{ font-size:clamp(1.5rem,7vh,2.375rem); }
@@ -1300,6 +1333,7 @@ body.reduced-motion .scroll-hint-chevron{ animation:none; }
   .ics-link{ min-height:44px; align-items:center; }
   .audio-toggle{ width:48px; height:48px; }
   .details-jump{ min-height:44px; }
+  .blessing-arrow{ width:44px; height:44px; }
 }
 
 /* ---------- Living Earth: the distance statement sits above the globe ----------
