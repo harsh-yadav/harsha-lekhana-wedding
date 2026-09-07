@@ -576,7 +576,7 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
 #earth-label-munich{ top:24%; left:16%; text-align:left; }
 #earth-label-bangalore{ bottom:22%; right:14%; text-align:right; }
 .earth-distance{
-  position:absolute; bottom:64px; left:50%; transform:translateX(-50%); z-index:6;
+  position:absolute; bottom:64px; left:50%; transform:translate(-50%, 38px); z-index:6;
   text-align:center; opacity:0; transition:opacity .8s var(--ease-out);
   /* left:50% leaves only half the frame to shrink-to-fit into, so on a phone
      "7,165 km apart" broke after "km". Size to the content instead. */
