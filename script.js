@@ -24,9 +24,9 @@ const wedding = {
   poster:"poster.png",
   /* one is picked per visit (see initAudio) and looped for the whole
      session -- add more filenames here to grow the pool. This is the
-     couple's stated priority order (1,2,5,4,0,3), and the pick is weighted
+     couple's stated priority order (1,2,5,4,0), and the pick is weighted
      to favor it: earlier entries play more often, not just listed first. */
-  music:["music1.mp3", "music2.mp3", "music5.mp3", "music4.mp3", "music0.mp3", "music3.mp3"],
+  music:["music1.mp3", "music2.mp3", "music5.mp3", "music4.mp3", "music0.mp3"],
   bridePhoto:"Bride.jpg",
   groomPhoto:"groom.jpg",
   theme:{
@@ -2637,15 +2637,26 @@ function initAudio(){
      mid-session -- this is background music for one visit, not a playlist.
      Weighted by wedding.music's own order: track 0 (highest priority) is n
      times as likely to be picked as the last one, track 1 is n-1 times as
-     likely, and so on down to the last track's single share. */
-  const n = tracks.length;
-  let roll = Math.random() * (n*(n+1)/2);
-  let pick = tracks[n-1];
-  for(let i=0;i<n;i++){
-    const weight = n-i;
-    if(roll < weight){ pick = tracks[i]; break; }
-    roll -= weight;
+     likely, and so on down to the last track's single share.
+
+     A weighted pick alone would make the top track just as likely to repeat
+     on a refresh as it was to play the first time -- weighting says nothing
+     about *consecutive* picks. So the previous pick (remembered for this tab
+     across refreshes, forgotten once the tab closes) is excluded from the
+     pool here; everything else keeps its normal relative weight. */
+  const LAST_KEY = 'weddingLastTrack';
+  let lastTrack = null;
+  try{ lastTrack = sessionStorage.getItem(LAST_KEY); }catch(e){}
+  const pool = tracks.length > 1 ? tracks.filter(t => t !== lastTrack) : tracks;
+  const weights = pool.map(t => tracks.length - tracks.indexOf(t));
+  const totalWeight = weights.reduce((a,b)=>a+b, 0);
+  let roll = Math.random() * totalWeight;
+  let pick = pool[pool.length-1];
+  for(let i=0;i<pool.length;i++){
+    if(roll < weights[i]){ pick = pool[i]; break; }
+    roll -= weights[i];
   }
+  try{ sessionStorage.setItem(LAST_KEY, pick); }catch(e){}
   audio.src = pick;
 
   /* what the visitor asked for, kept separate from what the element is doing
