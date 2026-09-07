@@ -2054,11 +2054,13 @@ function initScratchReveal(){
   const root = document.getElementById('scratchReveal');
   const card = document.getElementById('scratchCard');
   const canvas = document.getElementById('scratchCardCanvas');
-  const dateEl = document.getElementById('scratchCardDate');
+  /* the date now sits above the card rather than behind the foil, so it is
+     no longer part of what the interaction gates — but it stays config-driven */
+  const dateEl = document.getElementById('scratchDate');
   const hint = document.getElementById('scratchRevealHint');
-  if(!root || !card || !canvas || !dateEl) return;
+  if(!root || !card || !canvas) return;
 
-  if(dateEl.textContent.trim() === '') dateEl.textContent = wedding.weddingDateDisplay;
+  if(dateEl && dateEl.textContent.trim() === '') dateEl.textContent = wedding.weddingDateDisplay;
 
   /* willReadFrequently: scratchedRatio() calls getImageData on every
      pointermove — without this hint the browser silently drops the
@@ -2087,7 +2089,7 @@ function initScratchReveal(){
     ctx.font = '600 13px ' + getComputedStyle(document.body).fontFamily;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('SCRATCH TO REVEAL THE DATE', w/2, h/2);
+    ctx.fillText('SCRATCH TO REVEAL THE COUNTDOWN', w/2, h/2);
   }
 
   function resize(){
@@ -2358,7 +2360,7 @@ function setupReveals(){
      fades everything back out, and scrolling down into it again fades it
      back in, same as every other .will-reveal on the site. */
   if(REDUCED_MOTION){
-    gsap.set(['.ending-line','.ending-distance','.ending-invite','.ending-names','.ending-date','.ics-link'], { opacity:1, y:0 });
+    gsap.set(['.ending-line','.ending-invite','.ending-names','.ending-date','.ics-link'], { opacity:1, y:0 });
   } else {
     /* strictly top-to-bottom — the invitation sits above the names, so it has
        to arrive before them; revealing it later made the block assemble out
@@ -2368,7 +2370,6 @@ function setupReveals(){
       scrollTrigger:{ trigger:'#scene-ending', start:'top 60%', toggleActions:'play none none reverse' }
     })
       .to('.ending-line', { opacity:1, duration:1.1, ease:'power2.out', stagger:0.35 })
-      .to('.ending-distance', { opacity:1, y:0, duration:1 }, '+=0.15')
       .to('.ending-invite', { opacity:1, y:0, duration:1 }, '+=0.2')
       .to('.ending-names', { opacity:1, y:0, duration:1 }, '+=0.25')
       .to('.ending-date', { opacity:1, y:0, duration:.8 }, '-=0.45')
@@ -2465,25 +2466,19 @@ function setupPinnedScenes(){
       onLeaveBack: earthAutoplay.onLeaveBack
     }));
 
-    /* target is 1, not 0.9 — the countdown itself only starts fading in at
-       progress 0.965 (see below), so stopping autoplay at 0.9 used to leave
-       visitors stuck mid-pin after the last beat with nothing on screen
-       changing and no cue that scrolling further would reveal the
-       countdown and release them into the next scene. */
-    const connectionCountdown = document.getElementById('scene-countdown');
+    /* target is 1, not 0.9 — stopping autoplay at 0.9 used to leave visitors
+       stuck mid-pin after the last beat with nothing on screen changing and
+       no cue that scrolling further would release them into the next scene. */
     const countdownCue = document.getElementById('countdownScrollCue');
     const connectionAutoplay = setupSceneAutoplay({ target:1, totalDurationMs:17800 });
     ScrollTrigger.create(Object.assign({ trigger:'#scene-connection', pin:'#scene-connection .pin-wrap' }, pinCfg, {
       onUpdate:self => {
         connectionAutoplay.setSelf(self);
         ConnectionScene.update(self.progress);
-        if(connectionCountdown){
+        if(countdownCue){
+          /* only once the finale has essentially finished playing out */
           const t = clamp01((self.progress - 0.965) / 0.035);
-          connectionCountdown.style.opacity = String(t);
-          connectionCountdown.style.pointerEvents = t > 0.5 ? 'auto' : 'none';
-          /* only once the countdown has essentially finished revealing —
-             not while it's still fading in */
-          if(countdownCue) countdownCue.classList.toggle('is-visible', t > 0.9);
+          countdownCue.classList.toggle('is-visible', t > 0.9);
         }
       },
       onEnter: connectionAutoplay.onEnter,
@@ -2502,8 +2497,6 @@ function setupPinnedScenes(){
     document.getElementById('earthDistance').classList.add('is-visible');
     document.getElementById('connectionCaption').style.opacity = 1;
     document.getElementById('connectionCaption').style.transform = 'none';
-    const connectionCountdown = document.getElementById('scene-countdown');
-    if(connectionCountdown){ connectionCountdown.style.opacity = 1; connectionCountdown.style.pointerEvents = 'auto'; }
     const countdownCue = document.getElementById('countdownScrollCue');
     if(countdownCue) countdownCue.classList.add('is-visible');
   }
