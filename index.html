@@ -381,6 +381,12 @@
                provisional can ever reach a guest. -->
           <div class="map-frame" id="mapFrame"></div>
         </div>
+
+        <!-- filled by renderLiveStream() from wedding.liveStream: the card
+             that hands a guest who can't travel over to YouTube. Removed
+             from the DOM entirely while no broadcast URL is configured,
+             the same rule the map above follows. -->
+        <div class="live-stream will-reveal" id="liveStream"></div>
       </div>
     </div>
   </section>

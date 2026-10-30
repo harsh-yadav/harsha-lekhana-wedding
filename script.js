@@ -55,6 +55,20 @@ const wedding = {
     { date:"2026-11-29", label:"Reception", time:"18:00", durationHours:4 },
     { date:"2026-11-30", label:"Wedding",   time:"09:30", durationHours:3 },
   ],
+  /* YouTube live stream of the ceremony, for the guests who can't travel.
+     Leave `url` empty until a real broadcast exists — the whole block then
+     leaves no trace on the page at all, the same rule the map follows:
+     nothing provisional ever reaches a guest. Any ordinary YouTube form
+     works (watch?v=…, youtu.be/…, /live/…, /embed/…) — the link is rebuilt
+     from the video id so a mistyped or tracking-laden URL can't ship.
+     `event` names the schedule row above that the broadcast covers; its
+     time and durationHours are what decide whether the card reads "will be
+     streamed", "live now", or "watch it back", so the page can never claim
+     to be live while nothing is actually being broadcast. */
+  liveStream:{
+    url:"",
+    event:"Wedding"
+  },
   features:{
     earth:true,
     dynamicTimezones:true,
@@ -66,7 +80,8 @@ const wedding = {
     mouseParallax:true,
     gyroscope:true,
     scratchReveal:true,
-    blessingWall:true
+    blessingWall:true,
+    liveStream:true
   }
 };
 window.WEDDING_CONFIG = wedding;
@@ -195,6 +210,30 @@ function greatCircleKm(lat1, lon1, lat2, lon2){
   const dLat = (lat2-lat1)*rad, dLon = (lon2-lon1)*rad;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*rad)*Math.cos(lat2*rad)*Math.sin(dLon/2)**2;
   return Math.round(R * 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+}
+
+/* Wall-clock time in a named zone -> the absolute instant it refers to.
+   Date.UTC() would treat "27 Nov 11:00" as 11:00 UTC, and a plain
+   `new Date("...")` would read it in the *visitor's* zone — both give the
+   wrong instant for a ceremony that happens at 11:00 in Kolkata. This asks
+   Intl what the guessed instant looks like in the target zone and corrects
+   by the difference, so it stays right through DST anywhere. */
+function zonedToInstant(dateStr, timeStr, tz){
+  const [Y,M,D] = dateStr.split('-').map(Number);
+  const [h,m] = String(timeStr).split(':').map(Number);
+  const wanted = Date.UTC(Y, M-1, D, h, m);
+  let guess = wanted;
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+  });
+  for(let i=0;i<2;i++){
+    const parts = fmt.formatToParts(new Date(guess));
+    const at = t => Number(parts.find(p => p.type === t).value);
+    const seen = Date.UTC(at('year'), at('month')-1, at('day'), at('hour')%24, at('minute'), at('second'));
+    guess += wanted - seen;
+  }
+  return guess;
 }
 
 const MUNICH_LATLON = [48.1351, 11.5820];
@@ -1966,6 +2005,154 @@ const DetailsRenderer = (function(){
       ${secondary ? `<div class="sub">${secondary}</div>` : ''}
     </div>`;
   }
+  /* ---- LIVE STREAM ---------------------------------------------------
+     A card that hands the guest off to YouTube — deliberately not an
+     embedded player: the embed drags YouTube's chrome and cookies onto a
+     page this controlled, and it breaks outright if the broadcast is ever
+     set to disallow embedding, whereas a link always works. Same call the
+     map above already makes with its "Open in Google Maps" action.
+
+     What the card says follows the schedule, not just the date: before the
+     ceremony it promises a stream, during it says live, afterwards it
+     offers the recording YouTube leaves at the same URL. Claiming "live
+     now" while nothing is being broadcast is the one failure worth
+     engineering against here. */
+  const YT_ID = /(?:[?&]v=|\/live\/|\/embed\/|youtu\.be\/)([A-Za-z0-9_-]{11})/;
+
+  function fmtAt(ms, tz, opts, locale){
+    return new Intl.DateTimeFormat(locale || 'en-US', Object.assign({ timeZone: tz }, opts)).format(new Date(ms));
+  }
+  /* the site's own idiom for keeping a phrase whole on a narrow screen (see
+     the non-breaking spaces in .details-intro): a clock split into '9:30' and
+     'AM', or a zone name into 'India' and 'Time', reads as a mistake */
+  const nb = s => String(s).replace(/ /g, '\u00A0');
+  const clockAt    = (ms, tz) => nb(fmtAt(ms, tz, { hour:'numeric', minute:'2-digit', hour12:true }));
+  /* en-GB for dates ('Monday 30 November', exactly how the schedule cards
+     above read them) but en-US for the clock, which is the only locale of
+     the two that gives a plain '9:30 AM' rather than '09:30 am' */
+  const dayAt      = (ms, tz) => fmtAt(ms, tz, { weekday:'long', day:'numeric', month:'long' }, 'en-GB');
+  const shortDayAt = (ms, tz) => nb(fmtAt(ms, tz, { day:'numeric', month:'short' }, 'en-GB'));
+
+  /* "India Time" where the engine knows the name, "GMT+5:30" where it
+     doesn't. Either is unambiguous for someone watching from another
+     country, which a bare "9:30 AM" is not. */
+  function zoneName(ms, tz){
+    const forms = ['shortGeneric', 'short'];
+    for(let i=0;i<forms.length;i++){
+      try{
+        const part = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: forms[i] })
+          .formatToParts(new Date(ms)).find(p => p.type === 'timeZoneName');
+        if(part && part.value) return nb(part.value);
+      }catch(e){}
+    }
+    return '';
+  }
+
+  /* the same instant read in the visitor's own zone — returned only when it
+     actually differs from the venue's, so guests already in India aren't
+     told the same time twice. Comparing the identifiers wouldn't do:
+     browsers hand back aliases (Asia/Calcutta for Asia/Kolkata), so this
+     compares what the two zones actually render. */
+  function visitorTime(ms, tz){
+    let localTz = tz;
+    try{ localTz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; }catch(e){}
+    const same = { year:'numeric', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit', hour12:false };
+    if(fmtAt(ms, tz, same) === fmtAt(ms, localTz, same)) return '';
+    return shortDayAt(ms, localTz) + ', ' + clockAt(ms, localTz);
+  }
+
+  /* the instants the card's wording turns on, read off the schedule row the
+     stream covers */
+  function streamPlan(){
+    const ls = wedding.liveStream || {};
+    const tz = wedding.eventTimeZone || wedding.brideTimeZone || 'Asia/Kolkata';
+    const sched = wedding.schedule || [];
+    const row = sched.find(it => it && it.label === ls.event)
+             || sched.find(it => it && it.date === wedding.weddingDate)
+             || null;
+    const startsAt = row && row.time ? zonedToInstant(row.date, row.time, tz) : null;
+    const endsAt   = startsAt == null ? null : startsAt + ((row.durationHours || 3) * 3600000);
+    return { tz, startsAt, endsAt };
+  }
+
+  function renderLiveStream(){
+    const box = document.getElementById('liveStream');
+    if(!box) return;
+    const ls = wedding.liveStream || {};
+    const url = ls.url ? String(ls.url).trim() : '';
+    /* nothing configured (or something that isn't an https link) and the
+       block is removed outright rather than left as an empty bordered box */
+    if(!wedding.features.liveStream || !/^https:\/\//i.test(url)){ box.remove(); return; }
+
+    /* rebuilt from the id rather than passed through: it drops any tracking
+       or timestamp parameters a copied URL carries, and means nothing but
+       eleven known-safe characters of config ever reaches the href. A
+       channel-handle URL (youtube.com/@name/live) has no id to find, so it
+       is used as given — it is still a youtube.com link the couple wrote. */
+    const id = (url.match(YT_ID) || [])[1] || null;
+    const watchUrl = id ? 'https://www.youtube.com/watch?v=' + id : url;
+    const plan = streamPlan();
+    let timer = null;
+
+    function phaseAt(now){
+      if(plan.endsAt   != null && now >= plan.endsAt)   return 'after';
+      if(plan.startsAt != null && now >= plan.startsAt) return 'live';
+      return 'before';
+    }
+
+    function paint(){
+      const now = Date.now();
+      const phase = phaseAt(now);
+      const tz = plan.tz;
+
+      let heading = 'Watching from afar', when = '', local = '', action = 'Open the live stream';
+      if(plan.startsAt == null){
+        /* no timed row to reason about — stay on the one claim that is true
+           whatever the clock says */
+        when = 'The ceremony will be streamed live on YouTube.';
+      } else if(phase === 'before'){
+        const zone = zoneName(plan.startsAt, tz);
+        when = dayAt(plan.startsAt, tz) + ', ' + clockAt(plan.startsAt, tz) + (zone ? ' ' + zone : '') + '.';
+        const v = visitorTime(plan.startsAt, tz);
+        if(v) local = 'That’s ' + v + ' where you are.';
+      } else if(phase === 'live'){
+        heading = 'Live now';
+        action  = 'Watch the ceremony';
+      } else {
+        heading = 'The ceremony, as it happened';
+        when    = 'Streamed live on ' + dayAt(plan.startsAt, tz) + '.';
+        action  = 'Watch it back';
+      }
+
+      box.dataset.phase = phase;
+      box.innerHTML =
+        '<p class="eyebrow live-eyebrow">' +
+          (phase === 'live' ? '<span class="live-dot" aria-hidden="true"></span>' : '') +
+          'Live Stream</p>' +
+        '<h3 class="live-heading">' + heading + '</h3>' +
+        (when  ? '<p class="live-when">' + when + '</p>' : '') +
+        (local ? '<p class="live-local">' + local + '</p>' : '') +
+        '<a class="live-cta" href="' + watchUrl + '" target="_blank" rel="noopener noreferrer">' +
+          action + ' &#8599;</a>';
+
+      schedule(now);
+    }
+
+    /* a page left open across the start or end of the ceremony repaints
+       itself, instead of being right only for whoever reloads */
+    function schedule(now){
+      const next = [plan.startsAt, plan.endsAt]
+        .filter(t => t != null && t > now).sort((a,b) => a - b)[0];
+      /* setTimeout tops out near 24.8 days; a boundary further off than that
+         belongs to a later visit, which paints from scratch anyway */
+      if(next == null || next - now > 2147483000) return;
+      clearTimeout(timer);
+      timer = setTimeout(paint, (next - now) + 1000);
+    }
+
+    paint();
+  }
+
   function init(){
     const grid = document.getElementById('detailsGrid');
     let html = '';
@@ -1996,6 +2183,7 @@ const DetailsRenderer = (function(){
         <iframe src="${embedSrc}" loading="lazy" title="Map to ${wedding.venue}" referrerpolicy="no-referrer-when-downgrade"></iframe>
         <a class="map-link" href="${wedding.mapLink}" target="_blank" rel="noopener noreferrer">Open in Google Maps &#8599;</a>`;
     }
+    renderLiveStream();
   }
   return { init };
 })();
@@ -3070,29 +3258,6 @@ function buildIcs(){
     const t = Date.UTC(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10)) + 86400000;
     const x = new Date(t);
     return `${x.getUTCFullYear()}${String(x.getUTCMonth()+1).padStart(2,'0')}${String(x.getUTCDate()).padStart(2,'0')}`;
-  }
-  /* Wall-clock time in a named zone -> the absolute instant it refers to.
-     Date.UTC() would treat "27 Nov 11:00" as 11:00 UTC, and a plain
-     `new Date("...")` would read it in the *visitor's* zone — both give the
-     wrong instant for a ceremony that happens at 11:00 in Kolkata. This asks
-     Intl what the guessed instant looks like in the target zone and corrects
-     by the difference, so it stays right through DST anywhere. */
-  function zonedToInstant(dateStr, timeStr, tz){
-    const [Y,M,D] = dateStr.split('-').map(Number);
-    const [h,m] = String(timeStr).split(':').map(Number);
-    const wanted = Date.UTC(Y, M-1, D, h, m);
-    let guess = wanted;
-    const fmt = new Intl.DateTimeFormat('en-US', {
-      timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit',
-      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
-    });
-    for(let i=0;i<2;i++){
-      const parts = fmt.formatToParts(new Date(guess));
-      const at = t => Number(parts.find(p => p.type === t).value);
-      const seen = Date.UTC(at('year'), at('month')-1, at('day'), at('hour')%24, at('minute'), at('second'));
-      guess += wanted - seen;
-    }
-    return guess;
   }
   /* UTC stamps (the trailing Z) are what make a calendar render the event in
      whatever timezone the guest's own device is set to */
