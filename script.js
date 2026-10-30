@@ -51,7 +51,6 @@ const wedding = {
      optional and only overrides the venue where an event isn't held there. */
   eventTimeZone:"Asia/Kolkata",
   schedule:[
-    { date:"2026-11-27", label:"Haldi",     time:"11:00", durationHours:3, location:"At respective houses" },
     { date:"2026-11-29", label:"Reception", time:"18:00", durationHours:4 },
     { date:"2026-11-30", label:"Wedding",   time:"09:30", durationHours:3 },
   ],

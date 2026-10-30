@@ -908,7 +908,7 @@ body.reduced-motion .golden-haze{ animation:none; }
 .details-block{ text-align:center; width:100%; }
 .details-block .eyebrow, .details-block h2{ text-align:center; }
 .details-block h2{ margin:0 auto 4vh; }
-.details-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1px; max-width:1100px; margin:2.2rem auto 0; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.08); }
+.details-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1px; max-width:1100px; margin:2.2rem auto 0; background:rgba(var(--gold-rgb),.22); border:1px solid rgba(var(--gold-rgb),.35); }
 .details-card{ background:#050505; padding:44px 34px; opacity:0; transform:translateY(24px); text-align:left; }
 .details-card h3{ font-family:var(--font-body); font-size:var(--caps-size); letter-spacing:.28em; text-transform:uppercase; color:var(--gold); margin-bottom:16px; }
 .details-card p{ font-family:var(--font-display); font-style:italic; font-size:1.1875rem; line-height:1.5; color:var(--ivory); margin:0 0 6px; }
@@ -935,7 +935,7 @@ body.reduced-motion .golden-haze{ animation:none; }
    renderLiveStream() in script.js, which also decides the wording. */
 .live-stream{
   max-width:900px; margin:50px auto 0; padding:40px 34px;
-  border:1px solid rgba(255,255,255,.1); text-align:center;
+  border:1px solid rgba(var(--gold-rgb),.35); text-align:center;
 }
 .live-eyebrow{ display:inline-flex; align-items:center; gap:10px; margin-bottom:14px; }
 .live-heading{
