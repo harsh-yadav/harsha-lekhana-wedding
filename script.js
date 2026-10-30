@@ -76,7 +76,7 @@ const wedding = {
      streamed", "live now", or "watch it back", so the page can never claim
      to be live while nothing is actually being broadcast. */
   liveStream:{
-    url:"",
+    url:"https://www.youtube.com/watch?v=aaaaaaaaaaa",
     event:"Wedding"
   },
   features:{
