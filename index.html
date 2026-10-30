@@ -344,7 +344,7 @@
 
   <!-- SCENES 9-11 MERGED: Save the Date -> Countdown -> Details, one continuous flow
        (previously three separate full-height scenes with a lot of empty space between
-       them, and a duplicate "names + date" hero that repeated the poster's reveal) -->
+       them, and a duplicate "names + date" hero) -->
   <section class="scene reveal-flow" id="scene-savedate" data-scene-name="Countdown & Details" aria-label="Countdown and wedding details">
     <canvas class="scene-canvas" id="savedateParticles"></canvas>
     <div class="reveal-flow-inner">
@@ -354,7 +354,7 @@
         <!-- non-breaking spaces keep the two names on one line together, whatever the viewport -->
         <p class="details-intro will-reveal">With the blessings of both families, Harsha&nbsp;and&nbsp;Lekhana invite you to celebrate their wedding.</p>
 
-        <!-- a small tactile delight before the formal poster reveal — see
+        <!-- a small tactile delight before the photographs — see
              initScratchReveal in script.js. Falls back to the date shown
              plainly (no canvas, no interaction) under reduced motion, and
              degrades the same way if canvas 2D isn't available. -->
@@ -368,11 +368,13 @@
           <p class="scratch-reveal-hint" id="scratchRevealHint">Use your finger or mouse to scratch</p>
         </div>
 
-        <p class="poster-caption will-reveal">A day worth remembering.</p>
-        <div class="poster-frame will-reveal" id="posterFrame">
-          <img id="posterImg" alt="Harsha and Lekhana — Save the Date, 30 November 2026" loading="lazy" decoding="async">
-          <div class="poster-border"></div>
-        </div>
+        <p class="strip-caption will-reveal">A day worth remembering.</p>
+
+        <!-- the pre-wedding photographs, filled by renderGallery() from
+             wedding.gallery. Removed from the DOM when that array is empty,
+             the same rule the map and the stream card below follow. -->
+        <div class="photo-strip" id="photoStrip"></div>
+
         <div class="details-grid" id="detailsGrid"></div>
         <div class="details-map">
           <!-- filled by DetailsRenderer from wedding.mapLink / wedding.venue:

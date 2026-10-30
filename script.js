@@ -21,7 +21,6 @@ const wedding = {
   venue:"Sri Lakshmi Kalyana Mantapa",
   venueAddress:"Hoskote, Bangalore, India",
   mapLink:"https://maps.app.goo.gl/HZXWvWaQQnxGUJPHA",
-  poster:"poster.png",
   /* one is picked per visit (see initAudio) and looped for the whole
      session -- add more filenames here to grow the pool. This is the
      couple's stated priority order (1,2,5,4,0), and the pick is weighted
@@ -29,6 +28,18 @@ const wedding = {
   music:["music1.mp3", "music2.mp3", "music5.mp3", "music4.mp3", "music0.mp3"],
   bridePhoto:"Bride.jpg",
   groomPhoto:"groom.jpg",
+  /* the pre-wedding photographs, which are now the only pictures in this
+     part of the page. Every
+     one is a 2:3 portrait, which is what lets a single aspect-ratio hold
+     the whole row — crop anything you add to 2:3 before adding it. Each
+     carries its own alt: four pictures sharing one description tells a
+     screen reader nothing. Empty the array and the strip disappears. */
+  gallery:[
+    { src:"gallery-1.jpg",  alt:"Harsha lifting Lekhana off her feet, both laughing" },
+    { src:"gallery-2.jpg",  alt:"Harsha and Lekhana sitting close together, looking out towards a temple" },
+    { src:"gallery-3.webp", alt:"Harsha and Lekhana standing hand in hand before a temple gateway" },
+    { src:"gallery-4.jpg",  alt:"Harsha and Lekhana holding hands on a lawn beneath tall palms" }
+  ],
   theme:{
     background:"#050505",
     gold:"#D4AF37",
@@ -42,7 +53,7 @@ const wedding = {
      would ship to real guests if forgotten. Fill in to show the line. */
   /* <br> splits each onto two lines (father, then mother) -- trusted,
      hand-written config, not user input, so rendering it as HTML below
-     is safe the same way PosterScene's fallback markup already is */
+     is safe: nothing a guest types ever reaches this field. */
   brideParents:"D/O Mr. Manjunath<br>&amp; Mrs. Kavitha",
   groomParents:"S/O Mr. Gangadhara MK<br>&amp; Mrs. Kalpana G",
   /* every time below is wall-clock time in `eventTimeZone`. The calendar
@@ -73,7 +84,6 @@ const wedding = {
     dynamicTimezones:true,
     particles:true,
     countdown:true,
-    posterReveal:true,
     musicToggle:true,
     smoothScroll:true,
     mouseParallax:true,
@@ -2166,6 +2176,25 @@ const DetailsRenderer = (function(){
     paint();
   }
 
+  /* config is hand-written and trusted, the same way brideParents is, but
+     an apostrophe-free alt line is not something to rely on staying true —
+     a stray quote would silently break out of the attribute */
+  const attr = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+  function renderGallery(){
+    const strip = document.getElementById('photoStrip');
+    if(!strip) return;
+    const shots = (wedding.gallery || []).filter(g => g && g.src);
+    /* no photographs, no empty frames — the strip leaves no trace, the same
+       rule the map and the stream card follow */
+    if(!shots.length){ strip.remove(); return; }
+    strip.innerHTML = shots.map(g =>
+      '<figure class="photo-shot">' +
+        '<img src="' + attr(g.src) + '" alt="' + attr(g.alt) + '" loading="lazy" decoding="async">' +
+      '</figure>').join('');
+  }
+
   function init(){
     const grid = document.getElementById('detailsGrid');
     let html = '';
@@ -2196,39 +2225,18 @@ const DetailsRenderer = (function(){
         <iframe src="${embedSrc}" loading="lazy" title="Map to ${wedding.venue}" referrerpolicy="no-referrer-when-downgrade"></iframe>
         <a class="map-link" href="${wedding.mapLink}" target="_blank" rel="noopener noreferrer">Open in Google Maps &#8599;</a>`;
     }
+    renderGallery();
     renderLiveStream();
   }
   return { init };
 })();
 
-/* ============================================================
-   12. POSTER REVEAL — tries the real save-the-date image first;
-   falls back to a designed HTML poster if poster.jpg isn't
-   present yet, so the scene never breaks before the photo exists.
-   ============================================================ */
-const PosterScene = (function(){
-  function init(){
-    const img = document.getElementById('posterImg');
-    const frame = document.getElementById('posterFrame');
-    img.addEventListener('error', ()=>{
-      img.remove();
-      const fallback = document.createElement('div');
-      fallback.className = 'poster-fallback';
-      fallback.innerHTML = `
-        <div class="pf-names">${wedding.groom}<span class="pf-amp">&#9829;</span>${wedding.bride}</div>
-        <div class="pf-date">${wedding.weddingDateDisplay}</div>`;
-      frame.insertBefore(fallback, frame.firstChild);
-    }, { once:true });
-    img.src = wedding.poster;
-  }
-  return { init };
-})();
-
 /* the bride/groom photos are the one pair of images on the site with no
-   degradation path (unlike the poster right above) — same idea as
-   PosterScene's fallback, but quieter: this scene's own rule is "no frame,
-   no tint, the picture is the point," so the fallback is just the person's
-   initial in the same restrained voice, not a bordered card. */
+   degradation path. The photo strip above can simply drop a picture that
+   fails to load, but a missing face would leave a hole in a scene built
+   around it. This scene's own rule is "no frame, no tint, the picture is
+   the point," so the fallback is just the person's initial in the same
+   restrained voice, not a bordered card. */
 function setPersonPhoto(imgId, src, name){
   const img = document.getElementById(imgId);
   img.addEventListener('error', ()=>{
@@ -2645,6 +2653,21 @@ function setupReveals(){
     }
   }
 
+  /* the photographs slide in left to right rather than appearing together:
+     the strip is a sequence, not a block. Same staggered treatment the
+     schedule cards get above, moved onto x so it reads as a slide and not
+     as one more of the page's many rises. */
+  const shots = gsap.utils.toArray('.photo-strip .photo-shot');
+  if(shots.length){
+    if(REDUCED_MOTION){ shots.forEach(el => el.classList.add('is-revealed')); }
+    else {
+      gsap.to(shots, {
+        opacity:1, x:0, duration:1, ease:'power3.out', stagger:0.14,
+        scrollTrigger:{ trigger:'.photo-strip', start:'top 85%', toggleActions:'play none none reverse' }
+      });
+    }
+  }
+
   /* opening scene title lines + scroll cue play once, right after the loader (see initLoader) */
 
   /* ending — staggered lines, then names/date/calendar link. Reversible and
@@ -2671,7 +2694,7 @@ function setupReveals(){
 }
 
 /* ============================================================
-   15. PINNED SCROLL-SCRUBBED SCENES (Earth / Connection / Poster)
+   15. PINNED SCROLL-SCRUBBED SCENES (Earth / Connection)
    ============================================================ */
 function setupPinnedScenes(){
   const pinCfg = { start:'top top', end:'bottom bottom', scrub: REDUCED_MOTION ? false : 1 };
@@ -2785,9 +2808,6 @@ function setupPinnedScenes(){
       onLeave: connectionAutoplay.onLeave,
       onLeaveBack: connectionAutoplay.onLeaveBack
     }));
-    /* the poster now sits in the flow of the details block and reveals with
-       the ordinary .will-reveal pass (see setupReveals) — it no longer needs
-       a pinned scene or a scrub of its own */
   } else {
     /* reduced motion: no pin, no scrub — everything just settles into its resting state */
     EarthScene.update(0.9);
@@ -3493,7 +3513,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.documentElement.style.overflow = '';
     const greetingEl = document.getElementById('openingGreeting');
     if(greetingEl){ const g = getGreeting(); greetingEl.textContent = g.text + ' ' + g.emoji; }
-    document.querySelectorAll('.will-reveal, .opening-greeting, .scroll-hint, .connection-caption, .poster-frame').forEach(el=>{
+    document.querySelectorAll('.will-reveal, .opening-greeting, .scroll-hint, .connection-caption, .photo-shot').forEach(el=>{
       el.style.opacity = '1'; el.style.transform = 'none'; el.style.filter = 'none';
     });
     DetailsRenderer.init();
@@ -3511,7 +3531,6 @@ document.addEventListener('DOMContentLoaded', function(){
   ConnectionScene.init();
   if(wedding.features.countdown) Countdown.init();
   DetailsRenderer.init();
-  PosterScene.init();
   setPersonPhoto('bridePhoto', wedding.bridePhoto, wedding.bride);
   setPersonPhoto('groomPhoto', wedding.groomPhoto, wedding.groom);
   /* left as empty elements (not removed from the DOM) when blank, so filling
