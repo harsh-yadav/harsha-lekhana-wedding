@@ -838,12 +838,8 @@ body.reduced-motion .golden-haze{ animation:none; }
    invitation line and the photographs. See initScratchReveal in script.js.
    ============================================================ */
 .scratch-reveal{ margin:5vh auto 0; display:flex; flex-direction:column; align-items:center; }
-.scratch-reveal-eyebrow{ margin:0 0 10px; }
-.scratch-reveal-heading{
-  font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(1.25rem, 3vw, 1.75rem); color:var(--ivory); margin:0 0 3vh;
-  text-align:center;
-}
+.scratch-reveal-eyebrow{ margin:0 0 3vh; }
+
 .scratch-card{
   position:relative; width:min(340px, 82vw); height:132px;
   border-radius:12px; overflow:hidden;
@@ -870,12 +866,6 @@ body.reduced-motion .golden-haze{ animation:none; }
    entirely and the date is simply shown, per initScratchReveal's fallback */
 .scratch-card.is-static .scratch-card-canvas{ display:none; }
 
-/* a step quieter than the invitation above it — gold and smaller, so it
-   labels the photographs underneath rather than competing with the heading */
-.strip-caption{
-  font-family:var(--font-display); font-style:italic; font-weight:400;
-  font-size:clamp(.9375rem,1.7vw,1.25rem); color:var(--accent); margin:4vh 0 0;
-}
 /* a quiet nudge once the countdown itself has settled in — small and low-
    opacity on purpose, not the full gate/opening treatment (no label, no
    trail, no particle), so it doesn't compete with the date above it */
@@ -980,7 +970,7 @@ body.reduced-motion .live-dot{ animation:none; }
    so nothing below it moves. The gold is fuller than the .35 hairline on
    the grid and the stream card — those frame information against black,
    this one has to hold its own around a photograph. */
-.photo-show{ margin:5vh auto 0; width:min(76vw, 440px); }
+.photo-show{ margin:7vh auto 0; width:min(76vw, 440px); }
 .photo-frame{
   position:relative; aspect-ratio:2/3; overflow:hidden;
   border:1px solid rgba(var(--gold-rgb),.55); background:#0a0908;
