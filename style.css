@@ -974,20 +974,29 @@ body.reduced-motion .live-dot{ animation:none; }
 .photo-frame{
   position:relative; aspect-ratio:2/3; overflow:hidden;
   border:1px solid rgba(var(--gold-rgb),.55); background:#0a0908;
+  /* a sideways drag belongs to the rotator, a vertical one to the page */
+  touch-action:pan-y;
 }
 /* a parked slide carries no transition at all, which is what lets the
    outgoing picture snap back to the right-hand side after its move without
    that reset ever being visible. The frame clips both, so a slide can
    never reach the page edge. */
+/* --park is the side a picture waits on and --exit the side it leaves by;
+   renderGallery sets both per move so a swipe and the movement it causes
+   always agree. The defaults are the forward direction. */
 .photo-slide{
   position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-  opacity:0; transform:translateX(22%); transition:none;
+  opacity:0; transform:translateX(var(--park, 22%)); transition:none;
+  /* without this a desktop drag picks the photograph up instead */
+  user-select:none; -webkit-user-drag:none;
 }
 .photo-slide.is-active, .photo-slide.is-prev{
   transition:opacity .9s var(--ease-out), transform .9s var(--ease-out);
 }
+/* is-active is written last on purpose: should a slide ever end up with
+   both classes, the frame shows a photograph rather than going blank. */
+.photo-slide.is-prev{ opacity:0; transform:translateX(var(--exit, -22%)); z-index:1; }
 .photo-slide.is-active{ opacity:1; transform:translateX(0); z-index:2; }
-.photo-slide.is-prev{ opacity:0; transform:translateX(-22%); z-index:1; }
 
 .photo-dots{ display:flex; align-items:center; justify-content:center; gap:2px; margin-top:14px; }
 /* a 7px dot in a 20px target — the same pair the blessing wall uses, so a

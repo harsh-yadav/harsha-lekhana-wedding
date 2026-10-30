@@ -2219,38 +2219,96 @@ const DetailsRenderer = (function(){
     function start(){
       stop();
       if(paused || !inView || slides.length < 2) return;
-      timer = setInterval(function(){ go(index + 1); }, PHOTO_HOLD);
+      timer = setInterval(function(){ go(index + 1, 1); }, PHOTO_HOLD);
     }
-    function go(n){
+    /* dir is +1 for the next photograph and -1 for the previous one: a
+       picture asked for by a leftward swipe has to come in from the right
+       and one asked for by a rightward swipe from the left, or the gesture
+       and the movement disagree. */
+    function go(n, dir){
       const next = ((n % slides.length) + slides.length) % slides.length;
       if(next === index) return;
-      const leaving = slides[index];
+      if(!dir) dir = 1;
+      const leaving = slides[index], arriving = slides[next];
+
+      leaving.style.setProperty('--exit', dir > 0 ? '-22%' : '22%');
       leaving.classList.remove('is-active');
       leaving.classList.add('is-prev');
       /* a parked slide carries no transition, so dropping is-prev once the
-         move is over snaps the picture back to the right-hand side with
-         nothing visible — it is fully transparent by then. The guard is for
-         a visitor clicking dots faster than the move takes. */
+         move is over snaps the picture back out of frame with nothing
+         visible — it is fully transparent by then. The guard is for a
+         visitor swiping faster than the move takes. */
       setTimeout(function(){
         if(!leaving.classList.contains('is-active')) leaving.classList.remove('is-prev');
       }, 900);
-      slides[next].classList.add('is-active');
+
+      /* A picture chosen again before its own exit has finished is still
+         wearing is-prev, and the cleanup below will not take it off a slide
+         that has gone active -- which is precisely this one. Left on, it
+         holds the picture at opacity 0 and the frame goes blank. */
+      arriving.classList.remove('is-prev');
+
+      /* park the arriving picture on the side it should come from, then
+         force the browser to apply that before is-active starts it moving.
+         Without the reflow both changes land in one style pass and it
+         slides in from wherever it happened to be parked last. */
+      arriving.style.setProperty('--park', dir > 0 ? '22%' : '-22%');
+      void arriving.offsetWidth;
+      arriving.classList.add('is-active');
+
       dots[index].classList.remove('is-active');
       dots[next].classList.add('is-active');
       index = next;
     }
 
-    dots.forEach(function(d, i){ d.addEventListener('click', function(){ go(i); start(); }); });
+    dots.forEach(function(d, i){
+      d.addEventListener('click', function(){ go(i, i > index ? 1 : -1); start(); });
+    });
+
+    /* swipe, on the same 40px threshold the blessing wall uses */
+    let sx = 0, sy = 0, swiping = false;
+    frame.addEventListener('pointerdown', function(e){
+      sx = e.clientX; sy = e.clientY; swiping = true;
+    });
+    /* the release is listened for on the window, not the frame: a swipe
+       that carries past the edge of the picture still has to finish */
+    window.addEventListener('pointerup', function(e){
+      if(!swiping) return;
+      swiping = false;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      /* a mostly-vertical drag is the visitor scrolling the page past the
+         photograph, not asking for the next one */
+      if(Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return;
+      const dir = dx < 0 ? 1 : -1;
+      go(index + dir, dir);
+      start();
+    });
+    window.addEventListener('pointercancel', function(){ swiping = false; });
 
     /* content that advances on its own is the thing "reduced motion" is
-       asking us not to do. The dots still work, so all that is lost is the
-       timer. */
+       asking us not to do. The dots and the swipe still work, so all that
+       is lost is the timer. */
     if(REDUCED_MOTION) return;
 
-    /* and a visitor looking at one photograph should not have it taken away */
-    box.addEventListener('pointerenter', function(){ paused = true; stop(); });
-    box.addEventListener('pointerleave', function(){ paused = false; start(); });
-    box.addEventListener('focusin',  function(){ paused = true; stop(); });
+    /* A visitor looking at one photograph should not have it taken away --
+       but only a pointer that can really hover should hold it. On a touch
+       screen pointerenter fires on the tap and pointerleave frequently
+       never does, which left the rotation stopped for good. */
+    box.addEventListener('pointerenter', function(e){
+      if(e.pointerType !== 'mouse') return;
+      paused = true; stop();
+    });
+    box.addEventListener('pointerleave', function(e){
+      if(e.pointerType !== 'mouse') return;
+      paused = false; start();
+    });
+    /* focus is the same trap: tapping a dot focuses it, and on a phone
+       nothing ever takes that focus back. :focus-visible is what picks out
+       the keyboard visitor this is actually meant for. */
+    box.addEventListener('focusin', function(e){
+      const t = e.target;
+      if(t && t.matches && t.matches(':focus-visible')){ paused = true; stop(); }
+    });
     box.addEventListener('focusout', function(){ paused = false; start(); });
     document.addEventListener('visibilitychange', function(){
       if(document.visibilityState === 'hidden') stop(); else start();
