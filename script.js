@@ -2182,17 +2182,84 @@ const DetailsRenderer = (function(){
   const attr = s => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
+  /* One frame the photographs rotate through rather than a row of them: a
+     single picture at a readable size holds the eye better than four
+     thumbnails, and the frame keeps its own fixed space, so nothing below
+     it moves as the pictures change. */
+  const PHOTO_HOLD = 4000;
+
   function renderGallery(){
-    const strip = document.getElementById('photoStrip');
-    if(!strip) return;
+    const box = document.getElementById('photoShow');
+    if(!box) return;
+    const frame = document.getElementById('photoFrame');
+    const dotsWrap = document.getElementById('photoDots');
     const shots = (wedding.gallery || []).filter(g => g && g.src);
-    /* no photographs, no empty frames — the strip leaves no trace, the same
+    /* no photographs, no empty frame — the block leaves no trace, the same
        rule the map and the stream card follow */
-    if(!shots.length){ strip.remove(); return; }
-    strip.innerHTML = shots.map(g =>
-      '<figure class="photo-shot">' +
-        '<img src="' + attr(g.src) + '" alt="' + attr(g.alt) + '" loading="lazy" decoding="async">' +
-      '</figure>').join('');
+    if(!shots.length || !frame || !dotsWrap){ box.remove(); return; }
+
+    /* only the first picture is eager: the others are a few hundred KB each
+       and the rotation gives the browser four seconds apiece to fetch them */
+    frame.innerHTML = shots.map((g, i) =>
+      '<img class="photo-slide' + (i ? '' : ' is-active') + '" ' +
+      'src="' + attr(g.src) + '" alt="' + attr(g.alt) + '"' +
+      (i ? ' loading="lazy"' : '') + ' decoding="async">').join('');
+    const slides = Array.prototype.slice.call(frame.children);
+
+    /* the dots are the only thing saying how many photographs there are, and
+       the only way back to one that has just gone past */
+    dotsWrap.innerHTML = shots.map((g, i) =>
+      '<button type="button" class="photo-dot' + (i ? '' : ' is-active') +
+      '" aria-label="Photograph ' + (i + 1) + ' of ' + shots.length + '"></button>').join('');
+    const dots = Array.prototype.slice.call(dotsWrap.children);
+
+    let index = 0, timer = null, paused = false, inView = false;
+
+    function stop(){ clearInterval(timer); timer = null; }
+    function start(){
+      stop();
+      if(paused || !inView || slides.length < 2) return;
+      timer = setInterval(function(){ go(index + 1); }, PHOTO_HOLD);
+    }
+    function go(n){
+      const next = ((n % slides.length) + slides.length) % slides.length;
+      if(next === index) return;
+      const leaving = slides[index];
+      leaving.classList.remove('is-active');
+      leaving.classList.add('is-prev');
+      /* a parked slide carries no transition, so dropping is-prev once the
+         move is over snaps the picture back to the right-hand side with
+         nothing visible — it is fully transparent by then. The guard is for
+         a visitor clicking dots faster than the move takes. */
+      setTimeout(function(){
+        if(!leaving.classList.contains('is-active')) leaving.classList.remove('is-prev');
+      }, 900);
+      slides[next].classList.add('is-active');
+      dots[index].classList.remove('is-active');
+      dots[next].classList.add('is-active');
+      index = next;
+    }
+
+    dots.forEach(function(d, i){ d.addEventListener('click', function(){ go(i); start(); }); });
+
+    /* content that advances on its own is the thing "reduced motion" is
+       asking us not to do. The dots still work, so all that is lost is the
+       timer. */
+    if(REDUCED_MOTION) return;
+
+    /* and a visitor looking at one photograph should not have it taken away */
+    box.addEventListener('pointerenter', function(){ paused = true; stop(); });
+    box.addEventListener('pointerleave', function(){ paused = false; start(); });
+    box.addEventListener('focusin',  function(){ paused = true; stop(); });
+    box.addEventListener('focusout', function(){ paused = false; start(); });
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'hidden') stop(); else start();
+    });
+    /* nothing rotates while the frame is off screen */
+    onVisible(box, function(){ inView = true; start(); });
+    new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(!en.isIntersecting){ inView = false; stop(); } });
+    }, { threshold:0 }).observe(box);
   }
 
   function init(){
@@ -2264,7 +2331,6 @@ function initScratchReveal(){
   const card = document.getElementById('scratchCard');
   const canvas = document.getElementById('scratchCardCanvas');
   const dateEl = document.getElementById('scratchCardDate');
-  const hint = document.getElementById('scratchRevealHint');
   if(!root || !card || !canvas || !dateEl) return;
 
   if(dateEl.textContent.trim() === '') dateEl.textContent = wedding.weddingDateDisplay;
@@ -2275,7 +2341,6 @@ function initScratchReveal(){
   const ctx = canvas.getContext && canvas.getContext('2d', { willReadFrequently:true });
   if(!wedding.features.scratchReveal || REDUCED_MOTION || !ctx){
     card.classList.add('is-static');
-    if(hint) hint.classList.add('is-hidden');
     return;
   }
 
@@ -2346,7 +2411,6 @@ function initScratchReveal(){
     if(cleared) return;
     cleared = true;
     card.classList.add('is-cleared');
-    if(hint) hint.classList.add('is-hidden');
     window.removeEventListener('resize', resize);
   }
 
@@ -2354,7 +2418,6 @@ function initScratchReveal(){
     if(cleared) return;
     scratching = true;
     hasScratched = true;
-    if(hint) hint.classList.add('is-hidden');
     const p = pointFromEvent(e);
     lastX = p.x; lastY = p.y;
     scratchTo(p.x, p.y);
@@ -2653,20 +2716,6 @@ function setupReveals(){
     }
   }
 
-  /* the photographs slide in left to right rather than appearing together:
-     the strip is a sequence, not a block. Same staggered treatment the
-     schedule cards get above, moved onto x so it reads as a slide and not
-     as one more of the page's many rises. */
-  const shots = gsap.utils.toArray('.photo-strip .photo-shot');
-  if(shots.length){
-    if(REDUCED_MOTION){ shots.forEach(el => el.classList.add('is-revealed')); }
-    else {
-      gsap.to(shots, {
-        opacity:1, x:0, duration:1, ease:'power3.out', stagger:0.14,
-        scrollTrigger:{ trigger:'.photo-strip', start:'top 85%', toggleActions:'play none none reverse' }
-      });
-    }
-  }
 
   /* opening scene title lines + scroll cue play once, right after the loader (see initLoader) */
 
@@ -3513,7 +3562,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.documentElement.style.overflow = '';
     const greetingEl = document.getElementById('openingGreeting');
     if(greetingEl){ const g = getGreeting(); greetingEl.textContent = g.text + ' ' + g.emoji; }
-    document.querySelectorAll('.will-reveal, .opening-greeting, .scroll-hint, .connection-caption, .photo-shot').forEach(el=>{
+    document.querySelectorAll('.will-reveal, .opening-greeting, .scroll-hint, .connection-caption').forEach(el=>{
       el.style.opacity = '1'; el.style.transform = 'none'; el.style.filter = 'none';
     });
     DetailsRenderer.init();

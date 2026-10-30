@@ -869,12 +869,6 @@ body.reduced-motion .golden-haze{ animation:none; }
 /* reduced motion (or no canvas 2D support): the interaction is dropped
    entirely and the date is simply shown, per initScratchReveal's fallback */
 .scratch-card.is-static .scratch-card-canvas{ display:none; }
-.scratch-reveal-hint{
-  font-family:var(--font-body); font-size:.75rem; letter-spacing:.08em;
-  color:rgba(248,246,242,.45); margin:14px 0 0; text-align:center;
-  transition:opacity .5s var(--ease-out);
-}
-.scratch-reveal-hint.is-hidden{ opacity:0; }
 
 /* a step quieter than the invitation above it — gold and smaller, so it
    labels the photographs underneath rather than competing with the heading */
@@ -978,34 +972,55 @@ body.reduced-motion .live-dot{ animation:none; }
 /* ============================================================
    SCENE 12 — THE PHOTOGRAPHS
    ============================================================ */
-/* ---- photo strip ----
-   The pre-wedding photographs. Every one is a 2:3 portrait, so a single
-   aspect-ratio holds the whole row and the cells
-   line up however many there are — auto-fit then gives four across on a
-   desktop and two on a phone without a breakpoint for each. The hairline
-   is the same gold as the grid and the stream card but a step quieter:
-   these are pictures, not framed information. */
-.photo-strip{
-  display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
-  gap:clamp(10px, 1.6vw, 18px);
-  max-width:1100px; margin:5vh auto 0;
-}
-.photo-shot{
-  margin:0; aspect-ratio:2/3; overflow:hidden;
+/* ---- the photographs ----
+   One frame the pictures rotate through (see renderGallery). A single
+   photograph at a readable size holds the eye better than a row of
+   thumbnails, and because every one of them is a 2:3 portrait the frame
+   can hold a fixed aspect-ratio: it never resizes as the pictures change,
+   so nothing below it moves. The gold is fuller than the .35 hairline on
+   the grid and the stream card — those frame information against black,
+   this one has to hold its own around a photograph. */
+.photo-show{ margin:5vh auto 0; width:min(76vw, 440px); }
+.photo-frame{
+  position:relative; aspect-ratio:2/3; overflow:hidden;
   border:1px solid rgba(var(--gold-rgb),.55); background:#0a0908;
-  /* each photograph slides in on its own (see setupReveals) — a strip of
-     four reads as a sequence, and arriving one after another is what makes
-     it feel like one. body already clips horizontal overflow, so starting
-     them off to the left cannot produce a sideways scrollbar. */
-  opacity:0; transform:translateX(-34px);
 }
-.photo-shot img{
-  display:block; width:100%; height:100%; object-fit:cover;
-  transition:transform 1.1s var(--ease-out);
+/* a parked slide carries no transition at all, which is what lets the
+   outgoing picture snap back to the right-hand side after its move without
+   that reset ever being visible. The frame clips both, so a slide can
+   never reach the page edge. */
+.photo-slide{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  opacity:0; transform:translateX(22%); transition:none;
 }
-@media (hover:hover){ .photo-shot:hover img{ transform:scale(1.045); } }
-@media (prefers-reduced-motion: reduce){ .photo-shot img{ transition:none; } }
-body.reduced-motion .photo-shot img{ transition:none; }
+.photo-slide.is-active, .photo-slide.is-prev{
+  transition:opacity .9s var(--ease-out), transform .9s var(--ease-out);
+}
+.photo-slide.is-active{ opacity:1; transform:translateX(0); z-index:2; }
+.photo-slide.is-prev{ opacity:0; transform:translateX(-22%); z-index:1; }
+
+.photo-dots{ display:flex; align-items:center; justify-content:center; gap:2px; margin-top:14px; }
+/* a 7px dot in a 20px target — the same pair the blessing wall uses, so a
+   rotating thing is pointed at the same way wherever it appears */
+.photo-dot{
+  width:20px; height:20px; padding:0; border:0; background:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.photo-dot::before{
+  content:''; width:7px; height:7px; border-radius:50%;
+  background:rgba(248,246,242,.28);
+  transition:background .3s var(--ease-out), transform .3s var(--ease-out);
+}
+.photo-dot.is-active::before{ background:var(--gold); transform:scale(1.35); }
+
+/* the sideways travel is motion for its own sake; a plain cross-fade says
+   the same thing without it (and renderGallery stops the timer outright) */
+@media (prefers-reduced-motion: reduce){
+  .photo-slide, .photo-slide.is-active, .photo-slide.is-prev{ transform:none; }
+}
+body.reduced-motion .photo-slide,
+body.reduced-motion .photo-slide.is-active,
+body.reduced-motion .photo-slide.is-prev{ transform:none; }
 
 /* ============================================================
    BLESSING WALL — a guest-contributed scene between the details and

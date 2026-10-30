@@ -365,15 +365,18 @@
             <p class="scratch-card-date" id="scratchCardDate">30 November 2026</p>
             <canvas class="scratch-card-canvas" id="scratchCardCanvas" aria-hidden="true"></canvas>
           </div>
-          <p class="scratch-reveal-hint" id="scratchRevealHint">Use your finger or mouse to scratch</p>
         </div>
 
         <p class="strip-caption will-reveal">A day worth remembering.</p>
 
         <!-- the pre-wedding photographs, filled by renderGallery() from
-             wedding.gallery. Removed from the DOM when that array is empty,
-             the same rule the map and the stream card below follow. -->
-        <div class="photo-strip" id="photoStrip"></div>
+             wedding.gallery: one frame the pictures rotate through. Removed
+             from the DOM when that array is empty, the same rule the map and
+             the stream card below follow. -->
+        <div class="photo-show will-reveal" id="photoShow">
+          <div class="photo-frame" id="photoFrame"></div>
+          <div class="photo-dots" id="photoDots"></div>
+        </div>
 
         <div class="details-grid" id="detailsGrid"></div>
         <div class="details-map">
