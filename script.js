@@ -2080,9 +2080,7 @@ const DetailsRenderer = (function(){
     if(!box) return;
     const ls = wedding.liveStream || {};
     const url = ls.url ? String(ls.url).trim() : '';
-    /* nothing configured (or something that isn't an https link) and the
-       block is removed outright rather than left as an empty bordered box */
-    if(!wedding.features.liveStream || !/^https:\/\//i.test(url)){ box.remove(); return; }
+    if(!wedding.features.liveStream){ box.remove(); return; }
 
     /* rebuilt from the id rather than passed through: it drops any tracking
        or timestamp parameters a copied URL carries, and means nothing but
@@ -2090,7 +2088,14 @@ const DetailsRenderer = (function(){
        channel-handle URL (youtube.com/@name/live) has no id to find, so it
        is used as given — it is still a youtube.com link the couple wrote. */
     const id = (url.match(YT_ID) || [])[1] || null;
-    const watchUrl = id ? 'https://www.youtube.com/watch?v=' + id : url;
+    /* only an https URL ever becomes a button. Without one the card still
+       announces the stream rather than vanishing: a guest in another
+       timezone planning around a 9:30 AM ceremony needs to know it exists
+       months before the link does. It then says plainly that the link is
+       still to come — the same "Details to follow." candour the schedule
+       cards above already use for a detail that isn't settled yet. */
+    const watchUrl = !/^https:\/\//i.test(url) ? null
+                   : (id ? 'https://www.youtube.com/watch?v=' + id : url);
     const plan = streamPlan();
     let timer = null;
 
@@ -2105,12 +2110,19 @@ const DetailsRenderer = (function(){
       const phase = phaseAt(now);
       const tz = plan.tz;
 
+      /* a stream that was never linked has nothing left to say once the day
+         has gone by, so the block takes itself off the page */
+      if(!watchUrl && phase === 'after'){ box.remove(); return; }
+
       let heading = 'Watching from afar', when = '', local = '', action = 'Open the live stream';
       if(plan.startsAt == null){
         /* no timed row to reason about — stay on the one claim that is true
            whatever the clock says */
         when = 'The ceremony will be streamed live on YouTube.';
-      } else if(phase === 'before'){
+      } else if(!watchUrl || phase === 'before'){
+        /* with no link yet this wording holds whatever the clock says:
+           "Live now" with nothing to click would be worse than naming the
+           hour and admitting the link isn't up */
         const zone = zoneName(plan.startsAt, tz);
         when = dayAt(plan.startsAt, tz) + ', ' + clockAt(plan.startsAt, tz) + (zone ? ' ' + zone : '') + '.';
         const v = visitorTime(plan.startsAt, tz);
@@ -2124,16 +2136,18 @@ const DetailsRenderer = (function(){
         action  = 'Watch it back';
       }
 
-      box.dataset.phase = phase;
+      box.dataset.phase = watchUrl ? phase : 'pending';
       box.innerHTML =
         '<p class="eyebrow live-eyebrow">' +
-          (phase === 'live' ? '<span class="live-dot" aria-hidden="true"></span>' : '') +
+          (watchUrl && phase === 'live' ? '<span class="live-dot" aria-hidden="true"></span>' : '') +
           'Live Stream</p>' +
         '<h3 class="live-heading">' + heading + '</h3>' +
         (when  ? '<p class="live-when">' + when + '</p>' : '') +
         (local ? '<p class="live-local">' + local + '</p>' : '') +
-        '<a class="live-cta" href="' + watchUrl + '" target="_blank" rel="noopener noreferrer">' +
-          action + ' &#8599;</a>';
+        (watchUrl
+          ? '<a class="live-cta" href="' + watchUrl + '" target="_blank" rel="noopener noreferrer">' +
+              action + ' &#8599;</a>'
+          : '<p class="live-pending">The link will be shared here closer to the day.</p>');
 
       schedule(now);
     }

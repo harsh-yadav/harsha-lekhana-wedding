@@ -951,6 +951,13 @@ body.reduced-motion .golden-haze{ animation:none; }
   text-decoration:none; transition:transform .3s var(--ease-out), background .3s;
 }
 @media (hover:hover){ .live-cta:hover{ background:var(--accent); transform:translateY(-2px); } }
+/* stands in for the button while no link exists yet — same muted italic as
+   the "Details to follow." placeholder on the schedule cards above, so an
+   unsettled detail reads the same way wherever it appears */
+.live-pending{
+  font-family:var(--font-body); font-style:italic; font-size:.8125rem;
+  color:rgba(248,246,242,.5); margin:22px 0 0;
+}
 
 /* the indicator earns its pulse only in the phase where something is
    genuinely being broadcast — see phaseAt() in renderLiveStream */
