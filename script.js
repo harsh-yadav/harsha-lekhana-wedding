@@ -3432,6 +3432,12 @@ function buildIcs(){
   events.sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 
   const location = [wedding.venue, wedding.venueAddress].filter(Boolean).join(', ');
+  /* edit here to change when a guest is reminded -- ISO 8601 durations,
+     negative because they count backwards from the event */
+  const REMINDERS = [
+    { trigger:'-P2D', when:'in two days' },
+    { trigger:'-P1D', when:'tomorrow' }
+  ];
   const stamp = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
 
   const lines = [
@@ -3461,6 +3467,21 @@ function buildIcs(){
     /* an event held elsewhere carries its own place; the rest use the venue */
     const where = ev.place || location;
     if(where) lines.push(`LOCATION:${esc(where)}`);
+    /* two nudges on every entry: two days out, then the day before.
+       TRIGGER defaults to a DURATION measured from DTSTART, so a timed
+       event reminds at its own hour on each of those days and an all-day
+       one at the start of them. DISPLAY is the action every calendar
+       understands; AUDIO and EMAIL are not ours to schedule on a guest's
+       behalf. */
+    REMINDERS.forEach(function(r){
+      lines.push(
+        'BEGIN:VALARM',
+        'ACTION:DISPLAY',
+        `TRIGGER:${r.trigger}`,
+        `DESCRIPTION:${esc(`${ev.label} \u2014 ${couple} \u2014 ${r.when}`)}`,
+        'END:VALARM'
+      );
+    });
     lines.push('END:VEVENT');
   });
   lines.push('END:VCALENDAR');
