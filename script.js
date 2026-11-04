@@ -97,9 +97,12 @@ window.WEDDING_CONFIG = wedding;
 
 /* Blessing wall storage/auth — a public client config, not a secret (access
    is controlled by Firestore's own security rules, not by hiding this).
-   Project: harsha-lekhana-wedding. The Firestore rules (set in the Firebase
-   console, not in this repo) cap a blessing's text at under 1000 characters
-   — keep that in sync with MAX_LEN in initBlessingWall if either changes. */
+   Project: harsha-lekhana-wedding. The rules live in the Firebase console,
+   not in this repo, so nothing here can verify them — and this comment
+   claimed a 1000-character cap for months while the console actually
+   enforced 200, refusing every longer blessing and telling the guest to
+   check their connection. The console is the only source of truth; read it
+   there before trusting MAX_LEN below. */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyA5nV32XPpoQ02lw6PFe36u6KssnqpblTE",
   authDomain: "harsha-lekhana-wedding.firebaseapp.com",
@@ -2526,8 +2529,13 @@ function initBlessingWall(){
   const wall = document.getElementById('blessingWall');
   /* generous, not "unlimited" -- still a hard ceiling so one bad-faith
      paste can't write an arbitrarily large document to the database.
-     Matches the Firestore rule's own text.size() < 1000 (see the rules
-     comment near FIREBASE_CONFIG) -- change both together if this moves. */
+     The Firestore rule has a separate cap of its own and the two have
+     silently drifted apart before, so the rule should sit a little ABOVE
+     this number rather than level with it: its comparison is exclusive,
+     and the browser counts UTF-16 code units (an emoji is two) where
+     Firestore's size() need not agree. This number is what the guest sees
+     counting down, so it is the one that should be the tighter of the
+     two. */
   const MAX_LEN = 1000;
 
   const app = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(FIREBASE_CONFIG);
@@ -2537,6 +2545,26 @@ function initBlessingWall(){
   function showError(msg){
     errorEl.textContent = msg;
     errorEl.hidden = !msg;
+  }
+
+  /* "check your connection" is the wrong thing to tell a guest whose
+     blessing the server refused: their connection is fine, so they retry
+     all evening and it fails identically every time. Firestore separates
+     the cases by code, and only the last of these is really about the
+     network. The code is logged either way — without it a refusal and a
+     dropped signal look the same from the outside. */
+  function submitErrorText(err){
+    switch(err && err.code){
+      case 'permission-denied':
+      case 'unauthenticated':
+        return 'That couldn’t be posted — please let Harsha or Lekhana know.';
+      case 'resource-exhausted':
+        return 'The wall is busy just now — please try again in a few minutes.';
+      case 'invalid-argument':
+        return 'Something in that message couldn’t be saved — try it a little shorter.';
+      default:
+        return 'Couldn’t send that — check your connection and try again.';
+    }
   }
 
   /* ---- the slideshow: one blessing at a time, auto-advancing ---- */
@@ -2696,8 +2724,8 @@ function initBlessingWall(){
       }, 1800);
     }).catch(err=>{
       submitBtn.disabled = false;
-      showError('Couldn’t send that — check your connection and try again.');
-      console.error('blessing submit failed', err);
+      showError(submitErrorText(err));
+      console.error('blessing submit failed', (err && err.code) || '(no code)', err);
     });
   });
 }
