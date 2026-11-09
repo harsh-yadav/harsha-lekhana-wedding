@@ -381,7 +381,16 @@ body.reduced-motion .audio-toggle[data-playing="false"].is-visible{ animation:no
   height:100dvh;
   display:flex; align-items:center; justify-content:center;
 }
-.scene-canvas{ position:absolute; inset:0; width:100%; height:100%; }
+/* Every one of these is a decorative particle or globe layer, and each one
+   is absolutely positioned over its whole scene — so without this it sits
+   on top of anything in that scene that is not itself positioned and
+   quietly eats the clicks. That is what killed the blessing wall arrows
+   and six of its eight dots: .blessing-controls is static, so the only
+   part of the row that could be tapped was the active dot, whose ::before
+   carries a transform and so painted above the canvas. None of these
+   canvases listens for a pointer (the scratch card is .scratch-card-canvas,
+   not this class), so none of them should ever receive one. */
+.scene-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
 
 .scene-content{
   position:relative; z-index:5; width:100%; max-width:1180px; margin:0 auto;
