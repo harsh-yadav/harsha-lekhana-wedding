@@ -926,15 +926,42 @@ body.reduced-motion .golden-haze{ animation:none; }
    renderLiveStage). Below the loader so it cannot flash before the page
    has settled, above everything else so nothing of the story shows
    through in front of it. */
+/* the page stays visible behind it, dimmed and blurred: that is the
+   difference between a popup over the story and a second page in front of
+   it, and a guest should be able to see they have not left anything. */
 .live-stage{
   position:fixed; inset:0; z-index:1700;
-  background:rgba(4,4,4,.97);
+  background:rgba(4,4,4,.72);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
   display:flex; align-items:center; justify-content:center;
   padding:calc(20px + env(safe-area-inset-top)) var(--scene-pad) calc(20px + env(safe-area-inset-bottom));
   overflow-y:auto;
 }
 .live-stage[hidden]{ display:none; }
-.live-stage-panel{ width:100%; max-width:860px; text-align:center; }
+.live-stage-panel{
+  position:relative; width:100%; max-width:860px; text-align:center;
+  background:rgba(9,8,7,.97);
+  border:1px solid rgba(var(--gold-rgb),.45); border-radius:14px;
+  padding:clamp(24px, 3.4vw, 36px);
+  box-shadow:0 34px 90px rgba(0,0,0,.72);
+  animation:liveStagePop .5s var(--ease-out) both;
+}
+/* it arrives rather than simply being there — the small rise and settle is
+   what makes it read as something that popped up */
+@keyframes liveStagePop{
+  from{ opacity:0; transform:translateY(16px) scale(.975); }
+  to{ opacity:1; transform:none; }
+}
+@media (prefers-reduced-motion: reduce){ .live-stage-panel{ animation:none; } }
+body.reduced-motion .live-stage-panel{ animation:none; }
+.live-stage-close{
+  position:absolute; top:6px; right:6px; width:44px; height:44px;
+  padding:0; border:0; background:none; cursor:pointer;
+  color:rgba(248,246,242,.55); font-size:1.5rem; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  transition:color .3s var(--ease-out);
+}
+@media (hover:hover){ .live-stage-close:hover{ color:var(--ivory); } }
 .live-stage-eyebrow{ display:inline-flex; align-items:center; gap:10px; margin:0 0 12px; }
 .live-stage-heading{
   font-family:var(--font-display); font-style:italic; font-weight:400;

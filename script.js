@@ -2377,6 +2377,7 @@ const DetailsRenderer = (function(){
     const couple = wedding.groom + ' and ' + wedding.bride;
     stage.innerHTML =
       '<div class="live-stage-panel" role="dialog" aria-modal="true" aria-label="Wedding live stream">' +
+        '<button type="button" class="live-stage-close" aria-label="Close the live stream">&#215;</button>' +
         '<p class="eyebrow live-stage-eyebrow">' +
           (live ? '<span class="live-dot" aria-hidden="true"></span>' : '') +
           'Live Stream</p>' +
@@ -2404,6 +2405,11 @@ const DetailsRenderer = (function(){
       renderLiveBar();
     }
     stage.querySelector('.live-stage-dismiss').addEventListener('click', close);
+    stage.querySelector('.live-stage-close').addEventListener('click', close);
+    /* the dimmed page around the card closes it too, the way any popup
+       behaves — but only the backdrop itself, never a stray click that
+       happened to bubble up out of the card */
+    stage.addEventListener('click', function(e){ if(e.target === stage) close(); });
     document.addEventListener('keydown', function(e){
       if(e.key === 'Escape' && !stage.hidden) close();
     });
