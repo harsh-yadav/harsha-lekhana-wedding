@@ -2417,24 +2417,31 @@ const DetailsRenderer = (function(){
     }
 
     const tz = plan.tz;
+    /* from midnight on the wedding day onward, with no far end: once the
+       ceremony has happened the same URL is the recording of it, and that
+       is worth keeping in front of a guest who comes back. */
     const dayStart = zonedToInstant(wedding.weddingDate, '00:00', tz);
-    const dayEnd = dayStart + 86400000;
-    const now = Date.now();
-    let dismissed = false;
+    const viewTz = visitorZone(tz);
+    const zone = zoneName(plan.startsAt, viewTz);
+    const couple = wedding.groom + ' and ' + wedding.bride;
+    let dismissed = false, timer = null;
     try{ dismissed = sessionStorage.getItem(STAGE_DISMISS_KEY) === '1'; }catch(e){}
-    const onTheDay = PREVIEW_STREAM || (now >= dayStart && now < dayEnd);
-    if(dismissed || !onTheDay){ stage.hidden = true; return; }
+
+  function paint(){
+    const now = Date.now();
+    if(dismissed || !(PREVIEW_STREAM || now >= dayStart)){
+      stage.hidden = true;
+      document.documentElement.classList.remove('has-live-stage');
+      schedule(now);
+      return;
+    }
 
     const live = PREVIEW_STREAM || (now >= plan.startsAt && now < plan.endsAt);
     const over = !PREVIEW_STREAM && now >= plan.endsAt;
-    /* the hour a guest is told is the hour on their own clock */
-    const viewTz = visitorZone(tz);
-    const zone = zoneName(plan.startsAt, viewTz);
     const heading = live ? 'Live now'
                   : over ? 'The ceremony, as it happened'
                   : 'Begins at ' + clockAt(plan.startsAt, viewTz) + (zone ? ' ' + zone : '');
 
-    const couple = wedding.groom + ' and ' + wedding.bride;
     stage.innerHTML =
       '<div class="live-stage-panel" role="dialog" aria-label="Wedding live stream">' +
         '<button type="button" class="live-stage-close" aria-label="Close the live stream">&#215;</button>' +
@@ -2458,28 +2465,44 @@ const DetailsRenderer = (function(){
       '</div>';
     stage.hidden = false;
     document.documentElement.classList.add('has-live-stage');
+    stage.querySelector('.live-stage-dismiss').addEventListener('click', close);
+    stage.querySelector('.live-stage-close').addEventListener('click', close);
+    schedule(now);
+  }
 
     function close(){
       try{ sessionStorage.setItem(STAGE_DISMISS_KEY, '1'); }catch(e){}
+      dismissed = true;
+      clearTimeout(timer);
       stage.hidden = true;
       document.documentElement.classList.remove('has-live-stage');
       renderLiveBar();
     }
-    stage.querySelector('.live-stage-dismiss').addEventListener('click', close);
-    stage.querySelector('.live-stage-close').addEventListener('click', close);
 
+    /* the card is built once and then rebuilt at each boundary, so a page
+       left open from before the ceremony does not still read "begins at"
+       an hour after it started */
+    function schedule(now){
+      const next = [dayStart, plan.startsAt, plan.endsAt]
+        .filter(function(t){ return t != null && t > now; }).sort(function(a,b){ return a - b; })[0];
+      if(next == null || next - now > 2147483000) return;
+      clearTimeout(timer);
+      timer = setTimeout(paint, (next - now) + 1000);
+    }
+
+    /* bound once, not per repaint: Escape closes it, and focus moving into
+       the frame is the only signal available that the guest has started the
+       stream — the player is cross-origin, so there is nothing else to
+       listen to. Quite enough to stop the soundtrack over the vows. */
     document.addEventListener('keydown', function(e){
       if(e.key === 'Escape' && !stage.hidden) close();
     });
-
-    /* focus moving into the frame is the only signal available that the
-       guest has started the stream — the player is cross-origin, so there is
-       nothing else to listen to. Quite enough to stop the soundtrack playing
-       over the vows. */
-    const frame = document.getElementById('liveStageFrame');
     window.addEventListener('blur', function(){
-      if(document.activeElement === frame && silenceMusic) silenceMusic();
+      const frame = document.getElementById('liveStageFrame');
+      if(frame && document.activeElement === frame && silenceMusic) silenceMusic();
     });
+
+    paint();
   }
 
   function renderLiveBar(){
@@ -2498,7 +2521,6 @@ const DetailsRenderer = (function(){
     const watchUrl = id ? 'https://www.youtube.com/watch?v=' + id : url;
     const tz = plan.tz;
     const dayStart = zonedToInstant(wedding.weddingDate, '00:00', tz);
-    const dayEnd = dayStart + 86400000;
 
     const DISMISS_KEY = 'weddingLiveBarDismissed';
     let dismissed = false, timer = null;
@@ -2516,7 +2538,7 @@ const DetailsRenderer = (function(){
       const now = Date.now();
       let stageUp = false;
       try{ stageUp = document.documentElement.classList.contains('has-live-stage'); }catch(e){}
-      const onTheDay = PREVIEW_STREAM || (now >= dayStart && now < dayEnd);
+      const onTheDay = PREVIEW_STREAM || now >= dayStart;
       if(dismissed || stageUp || !onTheDay){ hide(); schedule(now); return; }
 
       const live = PREVIEW_STREAM || (now >= plan.startsAt && now < plan.endsAt);
@@ -2559,7 +2581,7 @@ const DetailsRenderer = (function(){
 
     /* a page left open through any of the day's boundaries repaints itself */
     function schedule(now){
-      const next = [dayStart, plan.startsAt, plan.endsAt, dayEnd]
+      const next = [dayStart, plan.startsAt, plan.endsAt]
         .filter(function(t){ return t != null && t > now; }).sort(function(a,b){ return a - b; })[0];
       if(next == null || next - now > 2147483000) return;
       clearTimeout(timer);
