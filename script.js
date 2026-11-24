@@ -2059,16 +2059,26 @@ function zoneName(ms, tz){
   return '';
 }
 
-/* the same instant read in the visitor's own zone — returned only when it
-   actually differs from the venue's, so guests already in India aren't
-   told the same time twice. Comparing the identifiers wouldn't do:
-   browsers hand back aliases (Asia/Calcutta for Asia/Kolkata), so this
-   compares what the two zones actually render. */
-function visitorTime(ms, tz){
-  let localTz = tz;
-  try{ localTz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; }catch(e){}
+/* the zone the visitor is actually in, falling back to the venue's when the
+   browser will not say */
+function visitorZone(fallbackTz){
+  try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || fallbackTz; }
+  catch(e){ return fallbackTz; }
+}
+
+/* whether two zones put this instant at a different moment on the clock.
+   Comparing the identifiers wouldn't do: browsers hand back aliases
+   (Asia/Calcutta for Asia/Kolkata), so this compares what they render. */
+function zonesDiffer(ms, a, b){
   const same = { year:'numeric', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit', hour12:false };
-  if(fmtAt(ms, tz, same) === fmtAt(ms, localTz, same)) return '';
+  return fmtAt(ms, a, same) !== fmtAt(ms, b, same);
+}
+
+/* the same instant read in the visitor's own zone — empty when that is the
+   venue's zone too, so nobody is told the same time twice */
+function visitorTime(ms, tz){
+  const localTz = visitorZone(tz);
+  if(!zonesDiffer(ms, tz, localTz)) return '';
   return shortDayAt(ms, localTz) + ', ' + clockAt(ms, localTz);
 }
 
@@ -2181,11 +2191,19 @@ const DetailsRenderer = (function(){
       } else if(!watchUrl || phase === 'before'){
         /* with no link yet this wording holds whatever the clock says:
            "Live now" with nothing to click would be worse than naming the
-           hour and admitting the link isn't up */
-        const zone = zoneName(plan.startsAt, tz);
-        when = dayAt(plan.startsAt, tz) + ', ' + clockAt(plan.startsAt, tz) + (zone ? ' ' + zone : '') + '.';
-        const v = visitorTime(plan.startsAt, tz);
-        if(v) local = 'That’s ' + v + ' where you are.';
+           hour and admitting the link isn't up.
+
+           The visitor's own clock leads. This card is for the guests who
+           will not be in the room, and "9:30 AM India Time" is a sum they
+           should not have to do in their head at five in the morning. The
+           venue's hour follows underneath, and only where the two actually
+           disagree — in Bangalore this reads exactly as it always did. */
+        const viewTz = visitorZone(tz);
+        const zone = zoneName(plan.startsAt, viewTz);
+        when = dayAt(plan.startsAt, viewTz) + ', ' + clockAt(plan.startsAt, viewTz) + (zone ? ' ' + zone : '') + '.';
+        if(zonesDiffer(plan.startsAt, tz, viewTz)){
+          local = clockAt(plan.startsAt, tz) + ' in ' + (wedding.brideCity || 'Bangalore') + '.';
+        }
       } else if(phase === 'live'){
         heading = 'Live now';
         action  = 'Watch the ceremony';
@@ -2409,10 +2427,12 @@ const DetailsRenderer = (function(){
 
     const live = PREVIEW_STREAM || (now >= plan.startsAt && now < plan.endsAt);
     const over = !PREVIEW_STREAM && now >= plan.endsAt;
-    const zone = zoneName(plan.startsAt, tz);
+    /* the hour a guest is told is the hour on their own clock */
+    const viewTz = visitorZone(tz);
+    const zone = zoneName(plan.startsAt, viewTz);
     const heading = live ? 'Live now'
                   : over ? 'The ceremony, as it happened'
-                  : 'The ceremony begins at ' + clockAt(plan.startsAt, tz) + (zone ? ' ' + zone : '');
+                  : 'Begins at ' + clockAt(plan.startsAt, viewTz) + (zone ? ' ' + zone : '');
 
     const couple = wedding.groom + ' and ' + wedding.bride;
     stage.innerHTML =
@@ -2501,7 +2521,8 @@ const DetailsRenderer = (function(){
 
       const live = PREVIEW_STREAM || (now >= plan.startsAt && now < plan.endsAt);
       const over = !PREVIEW_STREAM && now >= plan.endsAt;
-      const zone = zoneName(plan.startsAt, tz);
+      const viewTz = visitorZone(tz);
+      const zone = zoneName(plan.startsAt, viewTz);
       let label, action;
       if(live){
         label = 'Live now — the ceremony is streaming';
@@ -2510,7 +2531,7 @@ const DetailsRenderer = (function(){
         label = 'The ceremony, as it happened';
         action = 'Watch it back';
       } else {
-        label = 'The ceremony streams live at ' + clockAt(plan.startsAt, tz) + (zone ? ' ' + zone : '');
+        label = 'The ceremony streams live at ' + clockAt(plan.startsAt, viewTz) + (zone ? ' ' + zone : '');
         action = 'Watch';
       }
 
