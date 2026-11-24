@@ -2323,6 +2323,96 @@ const DetailsRenderer = (function(){
     }, { threshold:0 }).observe(box);
   }
 
+  /* On the wedding day the story stops being the point: a guest opening the
+     page that morning wants the ceremony, not twenty screens of scrolling to
+     find out where it is. For that one day a bar sits above everything with
+     the way in — and it takes itself down again at midnight, in the venue's
+     timezone rather than the visitor's, because it belongs to the day the
+     wedding happens on and not to whatever day it is where they are. */
+  function renderLiveBar(){
+    const bar = document.getElementById('liveBar');
+    if(!bar) return;
+    const ls = wedding.liveStream || {};
+    const url = ls.url ? String(ls.url).trim() : '';
+    const plan = streamPlan();
+    /* no stream, or no timed ceremony to hang it on, and the bar never exists */
+    if(!wedding.features.liveStream || !/^https:\/\//i.test(url) || plan.startsAt == null){
+      bar.remove();
+      return;
+    }
+
+    const id = (url.match(YT_ID) || [])[1] || null;
+    const watchUrl = id ? 'https://www.youtube.com/watch?v=' + id : url;
+    const tz = plan.tz;
+    const dayStart = zonedToInstant(wedding.weddingDate, '00:00', tz);
+    const dayEnd = dayStart + 86400000;
+
+    const DISMISS_KEY = 'weddingLiveBarDismissed';
+    let dismissed = false, timer = null;
+    try{ dismissed = sessionStorage.getItem(DISMISS_KEY) === '1'; }catch(e){}
+
+    function setHeight(){
+      document.documentElement.style.setProperty('--live-bar-h', bar.offsetHeight + 'px');
+    }
+    function hide(){
+      bar.hidden = true;
+      document.documentElement.classList.remove('has-live-bar');
+    }
+
+    function paint(){
+      const now = Date.now();
+      if(dismissed || now < dayStart || now >= dayEnd){ hide(); schedule(now); return; }
+
+      const live = now >= plan.startsAt && now < plan.endsAt;
+      const over = now >= plan.endsAt;
+      const zone = zoneName(plan.startsAt, tz);
+      let label, action;
+      if(live){
+        label = 'Live now — the ceremony is streaming';
+        action = 'Watch';
+      } else if(over){
+        label = 'The ceremony, as it happened';
+        action = 'Watch it back';
+      } else {
+        label = 'The ceremony streams live at ' + clockAt(plan.startsAt, tz) + (zone ? ' ' + zone : '');
+        action = 'Watch';
+      }
+
+      bar.innerHTML =
+        '<div class="live-bar-inner">' +
+          (live ? '<span class="live-dot" aria-hidden="true"></span>' : '') +
+          '<span class="live-bar-text">' + label + '</span>' +
+          '<a class="live-bar-cta" href="' + watchUrl + '" target="_blank" rel="noopener noreferrer">' +
+            action + ' &#8599;</a>' +
+          '<button type="button" class="live-bar-close" aria-label="Hide the live stream bar">&#215;</button>' +
+        '</div>';
+      bar.hidden = false;
+      document.documentElement.classList.add('has-live-bar');
+      setHeight();
+      /* dismissal lasts the visit, not forever: someone who waves it away
+         before the ceremony should still get it back the next time they open
+         the page, which on the day is usually to watch */
+      bar.querySelector('.live-bar-close').addEventListener('click', function(){
+        dismissed = true;
+        try{ sessionStorage.setItem(DISMISS_KEY, '1'); }catch(e){}
+        hide();
+      });
+      schedule(now);
+    }
+
+    /* a page left open through any of the day's boundaries repaints itself */
+    function schedule(now){
+      const next = [dayStart, plan.startsAt, plan.endsAt, dayEnd]
+        .filter(function(t){ return t != null && t > now; }).sort(function(a,b){ return a - b; })[0];
+      if(next == null || next - now > 2147483000) return;
+      clearTimeout(timer);
+      timer = setTimeout(paint, (next - now) + 1000);
+    }
+
+    window.addEventListener('resize', setHeight, { passive:true });
+    paint();
+  }
+
   function init(){
     const grid = document.getElementById('detailsGrid');
     let html = '';
@@ -2355,6 +2445,7 @@ const DetailsRenderer = (function(){
     }
     renderGallery();
     renderLiveStream();
+    renderLiveBar();
   }
   return { init };
 })();

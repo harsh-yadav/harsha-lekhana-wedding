@@ -921,6 +921,55 @@ body.reduced-motion .golden-haze{ animation:none; }
 }
 @media (hover:hover){ .map-link:hover{ background:var(--accent); transform:translateY(-2px); } }
 
+/* ---- the wedding-day bar ----
+   Fixed above everything but the loader, and only ever on the day itself
+   (see renderLiveBar). It overlays the top of the opening rather than
+   pushing the page down: every scene here is centred and full-height, so
+   there is nothing at the top edge for it to cover. */
+.live-bar{
+  position:fixed; top:0; left:0; right:0; z-index:1000;
+  background:rgba(8,7,6,.96);
+  border-bottom:1px solid rgba(var(--gold-rgb),.45);
+  padding:calc(11px + env(safe-area-inset-top)) var(--scene-pad) 11px;
+}
+.live-bar[hidden]{ display:none; }
+.live-bar-inner{
+  position:relative; max-width:1100px; margin:0 auto; padding-right:38px;
+  display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;
+}
+.live-bar-text{ font-family:var(--font-body); font-size:.875rem; line-height:1.4; color:var(--ivory); }
+.live-bar-cta{
+  font-family:var(--font-mono); font-size:.6875rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--bg); background:var(--gold); padding:11px 20px; border-radius:999px;
+  text-decoration:none; white-space:nowrap; transition:background .3s var(--ease-out);
+}
+@media (hover:hover){ .live-bar-cta:hover{ background:var(--accent); } }
+.live-bar-close{
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+  width:34px; height:34px; padding:0; border:0; background:none; cursor:pointer;
+  color:rgba(248,246,242,.55); font-size:1.375rem; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  transition:color .3s var(--ease-out);
+}
+@media (hover:hover){ .live-bar-close:hover{ color:var(--ivory); } }
+/* the two fixed things that also live at the very top of the window step
+   down past the bar rather than hiding behind it */
+html.has-live-bar .progress-bar{ top:calc(var(--live-bar-h, 0px) + env(safe-area-inset-top)); }
+/* only once it is focused: at rest the skip link hides itself by translating
+   140% of its own height straight up, so moving its top down would park it
+   in view on top of the bar instead of off the screen */
+html.has-live-bar .skip-link:focus{ z-index:1001; top:calc(var(--live-bar-h, 0px) + 14px + env(safe-area-inset-top)); }
+@media (max-width:560px){
+  .live-bar-text{ font-size:.8125rem; }
+  .live-bar-inner{ gap:9px; padding-right:40px; }
+}
+/* 44px of finger on the two things worth tapping, matching the blessing
+   arrows; at the desktop size a cursor does not need it */
+@media (hover:none),(pointer:coarse){
+  .live-bar-cta{ padding:16px 20px; }
+  .live-bar-close{ width:44px; height:44px; }
+}
+
 /* ---- live stream ----
    Sits directly under the map, in the same single-hairline box language,
    so it reads as one more piece of practical information for a guest who
