@@ -2442,31 +2442,43 @@ const DetailsRenderer = (function(){
                   : over ? 'The ceremony, as it happened'
                   : 'Begins at ' + clockAt(plan.startsAt, viewTz) + (zone ? ' ' + zone : '');
 
-    stage.innerHTML =
-      '<div class="live-stage-panel" role="dialog" aria-label="Wedding live stream">' +
-        '<button type="button" class="live-stage-close" aria-label="Close the live stream">&#215;</button>' +
-        '<p class="eyebrow live-stage-eyebrow">' +
-          (live ? '<span class="live-dot" aria-hidden="true"></span>' : '') +
-          'Live Stream</p>' +
-        '<div class="live-stage-player">' +
-          '<iframe id="liveStageFrame" src="https://www.youtube-nocookie.com/embed/' + id + '?rel=0"' +
-          ' title="' + attr(couple + ' — wedding live stream') + '"' +
-          ' referrerpolicy="strict-origin-when-cross-origin"' +
-          ' allow="encrypted-media; picture-in-picture; web-share; fullscreen"' +
-          ' allowfullscreen></iframe>' +
-        '</div>' +
-        '<p class="live-stage-heading">' + heading + '</p>' +
-        '<p class="live-stage-sub">' + attr(couple) + '</p>' +
-        '<div class="live-stage-foot">' +
-          '<button type="button" class="live-stage-dismiss">Close</button>' +
-          '<a class="live-stage-link" href="https://www.youtube.com/watch?v=' + id + '"' +
-          ' target="_blank" rel="noopener noreferrer">Watch on YouTube</a>' +
-        '</div>' +
-      '</div>';
+    /* Built once. Every later pass only rewrites the wording, because
+       rebuilding this markup would tear out the <iframe> and put a fresh
+       one in its place — which, for a guest already watching, means the
+       stream stops dead and starts again. That would have happened to
+       everyone mid-ceremony at 9:30, and again at 12:30. */
+    if(!stage.firstElementChild){
+      stage.innerHTML =
+        '<div class="live-stage-panel" role="dialog" aria-label="Wedding live stream">' +
+          '<button type="button" class="live-stage-close" aria-label="Close the live stream">&#215;</button>' +
+          '<p class="eyebrow live-stage-eyebrow">Live Stream</p>' +
+          '<div class="live-stage-player">' +
+            '<iframe id="liveStageFrame" src="https://www.youtube-nocookie.com/embed/' + id + '?rel=0"' +
+            ' title="' + attr(couple + ' — wedding live stream') + '"' +
+            ' referrerpolicy="strict-origin-when-cross-origin"' +
+            ' allow="encrypted-media; picture-in-picture; fullscreen"' +
+            ' allowfullscreen></iframe>' +
+          '</div>' +
+          '<p class="live-stage-heading"></p>' +
+          '<p class="live-stage-sub">' + attr(couple) + '</p>' +
+          '<div class="live-stage-foot">' +
+            '<button type="button" class="live-stage-dismiss">Close</button>' +
+            '<a class="live-stage-link" href="https://www.youtube.com/watch?v=' + id + '"' +
+            ' target="_blank" rel="noopener noreferrer">Watch on YouTube</a>' +
+          '</div>' +
+        '</div>';
+      stage.querySelector('.live-stage-dismiss').addEventListener('click', close);
+      stage.querySelector('.live-stage-close').addEventListener('click', close);
+    }
+
+    stage.querySelector('.live-stage-heading').textContent = heading;
+    const eyebrow = stage.querySelector('.live-stage-eyebrow');
+    const dot = eyebrow.querySelector('.live-dot');
+    if(live && !dot) eyebrow.insertAdjacentHTML('afterbegin', '<span class="live-dot" aria-hidden="true"></span>');
+    if(!live && dot) dot.remove();
+
     stage.hidden = false;
     document.documentElement.classList.add('has-live-stage');
-    stage.querySelector('.live-stage-dismiss').addEventListener('click', close);
-    stage.querySelector('.live-stage-close').addEventListener('click', close);
     schedule(now);
   }
 
