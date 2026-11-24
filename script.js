@@ -143,6 +143,13 @@ const MAX_PIXEL_RATIO = TIER === 'high' ? Math.min(devicePixelRatio||1, 2) : 1.4
    keeps stars reading as delicate/scattered rather than big and clumped. */
 const STAR_SIZE = IS_SMALL ? 1.1 : 1.75;
 
+/* ?stream=preview forces the wedding-day pieces up on any day, so the
+   couple can see exactly what a guest will see on the 30th without having
+   to wait for it or move the clock. It only ever lifts the date gate and
+   pins the wording to "live"; nothing else behaves differently, and a
+   guest can only reach it by typing it into the address bar. */
+const PREVIEW_STREAM = /[?&]stream=preview(?:&|$)/.test(location.search);
+
 /* ============================================================
    2. UTILITIES
    ============================================================ */
@@ -2357,10 +2364,11 @@ const DetailsRenderer = (function(){
     const now = Date.now();
     let dismissed = false;
     try{ dismissed = sessionStorage.getItem(STAGE_DISMISS_KEY) === '1'; }catch(e){}
-    if(dismissed || now < dayStart || now >= dayEnd){ stage.hidden = true; return; }
+    const onTheDay = PREVIEW_STREAM || (now >= dayStart && now < dayEnd);
+    if(dismissed || !onTheDay){ stage.hidden = true; return; }
 
-    const live = now >= plan.startsAt && now < plan.endsAt;
-    const over = now >= plan.endsAt;
+    const live = PREVIEW_STREAM || (now >= plan.startsAt && now < plan.endsAt);
+    const over = !PREVIEW_STREAM && now >= plan.endsAt;
     const zone = zoneName(plan.startsAt, tz);
     const heading = live ? 'Live now'
                   : over ? 'The ceremony, as it happened'
@@ -2444,10 +2452,11 @@ const DetailsRenderer = (function(){
       const now = Date.now();
       let stageUp = false;
       try{ stageUp = document.documentElement.classList.contains('has-live-stage'); }catch(e){}
-      if(dismissed || stageUp || now < dayStart || now >= dayEnd){ hide(); schedule(now); return; }
+      const onTheDay = PREVIEW_STREAM || (now >= dayStart && now < dayEnd);
+      if(dismissed || stageUp || !onTheDay){ hide(); schedule(now); return; }
 
-      const live = now >= plan.startsAt && now < plan.endsAt;
-      const over = now >= plan.endsAt;
+      const live = PREVIEW_STREAM || (now >= plan.startsAt && now < plan.endsAt);
+      const over = !PREVIEW_STREAM && now >= plan.endsAt;
       const zone = zoneName(plan.startsAt, tz);
       let label, action;
       if(live){
