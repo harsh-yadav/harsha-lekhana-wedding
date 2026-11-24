@@ -342,6 +342,11 @@
              zero), just without naming the day out loud before then. -->
         <p class="connection-countdown-heading">The day two journeys become one.</p>
         <div class="countdown-grid" id="countdownGrid"></div>
+        <!-- filled by Countdown.showLocalHour() only when the visitor is in a
+             different timezone from the venue: the hour they will be watching
+             at. Never the date -- the scratch card below is still the first
+             place that is said out loud. -->
+        <p class="countdown-local" id="countdownLocal" hidden></p>
         <div class="countdown-married" id="countdownMarried">A new chapter begins.</div>
       </div>
       <div class="countdown-scroll-hint" id="countdownScrollCue" aria-hidden="true">

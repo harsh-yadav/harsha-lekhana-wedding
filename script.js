@@ -1967,10 +1967,34 @@ const Countdown = (function(){
       faces[key] = face;
     });
   }
+  /* the local line names an hour but never a date: the scratch card further
+     down exists to be the first place a visitor learns the day, and this
+     scene deliberately stopped spelling it out (see its markup). Shown only
+     where the visitor's clock actually disagrees with the venue's, so the
+     guests in India are not told the same time twice. */
+  function showLocalHour(target){
+    const el = document.getElementById('countdownLocal');
+    if(!el) return;
+    const tz = wedding.eventTimeZone || wedding.brideTimeZone || 'Asia/Kolkata';
+    let localTz = tz;
+    try{ localTz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; }catch(e){}
+    const same = { year:'numeric', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit', hour12:false };
+    if(fmtAt(target, tz, same) === fmtAt(target, localTz, same)) return;
+    const venue = wedding.brideCity || 'the venue';
+    el.textContent = clockAt(target, tz) + ' in ' + venue + ' \u2014 ' +
+                     clockAt(target, localTz) + ' where you are.';
+    el.hidden = false;
+  }
+
   function tick(){
-    const target = new Date(wedding.weddingDate + 'T00:00:00');
-    const now = new Date();
+    /* an absolute instant, not "midnight on the 30th": the old target was a
+       bare ISO string with no zone, which every browser reads in its own,
+       so a guest in Munich counted down to a different moment than one in
+       Bangalore and neither was the ceremony. */
+    const target = ceremonyInstant();
+    const now = Date.now();
     let diff = target - now;
+    showLocalHour(target);
     if(diff <= 0){
       document.getElementById('countdownGrid').style.display = 'none';
       document.getElementById('countdownMarried').style.display = 'block';
@@ -2006,6 +2030,63 @@ const Countdown = (function(){
    11. WEDDING DETAILS — data-driven, graceful placeholders for
    any field the couple hasn't filled in yet. No RSVP, per spec.
    ============================================================ */
+function fmtAt(ms, tz, opts, locale){
+  return new Intl.DateTimeFormat(locale || 'en-US', Object.assign({ timeZone: tz }, opts)).format(new Date(ms));
+}
+/* the site's own idiom for keeping a phrase whole on a narrow screen (see
+   the non-breaking spaces in .details-intro): a clock split into '9:30' and
+   'AM', or a zone name into 'India' and 'Time', reads as a mistake */
+const nb = s => String(s).replace(/ /g, '\u00A0');
+const clockAt    = (ms, tz) => nb(fmtAt(ms, tz, { hour:'numeric', minute:'2-digit', hour12:true }));
+/* en-GB for dates ('Monday 30 November', exactly how the schedule cards
+   above read them) but en-US for the clock, which is the only locale of
+   the two that gives a plain '9:30 AM' rather than '09:30 am' */
+const dayAt      = (ms, tz) => fmtAt(ms, tz, { weekday:'long', day:'numeric', month:'long' }, 'en-GB');
+const shortDayAt = (ms, tz) => nb(fmtAt(ms, tz, { day:'numeric', month:'short' }, 'en-GB'));
+
+/* "India Time" where the engine knows the name, "GMT+5:30" where it
+   doesn't. Either is unambiguous for someone watching from another
+   country, which a bare "9:30 AM" is not. */
+function zoneName(ms, tz){
+  const forms = ['shortGeneric', 'short'];
+  for(let i=0;i<forms.length;i++){
+    try{
+      const part = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: forms[i] })
+        .formatToParts(new Date(ms)).find(p => p.type === 'timeZoneName');
+      if(part && part.value) return nb(part.value);
+    }catch(e){}
+  }
+  return '';
+}
+
+/* the same instant read in the visitor's own zone — returned only when it
+   actually differs from the venue's, so guests already in India aren't
+   told the same time twice. Comparing the identifiers wouldn't do:
+   browsers hand back aliases (Asia/Calcutta for Asia/Kolkata), so this
+   compares what the two zones actually render. */
+function visitorTime(ms, tz){
+  let localTz = tz;
+  try{ localTz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; }catch(e){}
+  const same = { year:'numeric', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit', hour12:false };
+  if(fmtAt(ms, tz, same) === fmtAt(ms, localTz, same)) return '';
+  return shortDayAt(ms, localTz) + ', ' + clockAt(ms, localTz);
+}
+
+/* The one absolute instant the whole page turns on: the ceremony itself,
+   read in the venue's timezone. Because it is a real moment rather than a
+   wall-clock date, every countdown and label derived from it is already
+   right wherever it is opened — 9:30 in Bangalore is 5:00 in Munich and
+   the evening before in New York, and all three are the same number of
+   hours away from it. */
+function ceremonyInstant(){
+  const tz = wedding.eventTimeZone || wedding.brideTimeZone || 'Asia/Kolkata';
+  const sched = wedding.schedule || [];
+  const row = sched.find(function(it){ return it && it.date === wedding.weddingDate && it.time; })
+           || sched.find(function(it){ return it && it.time; });
+  return row ? zonedToInstant(row.date, row.time, tz)
+             : zonedToInstant(wedding.weddingDate, '00:00', tz);
+}
+
 const DetailsRenderer = (function(){
   /* "09:30" -> "9:30 AM". Shown as the local time of the celebration itself
      (IST), which is what a printed invitation would say — the calendar file
@@ -2038,47 +2119,6 @@ const DetailsRenderer = (function(){
      engineering against here. */
   const YT_ID = /(?:[?&]v=|\/live\/|\/embed\/|youtu\.be\/)([A-Za-z0-9_-]{11})/;
 
-  function fmtAt(ms, tz, opts, locale){
-    return new Intl.DateTimeFormat(locale || 'en-US', Object.assign({ timeZone: tz }, opts)).format(new Date(ms));
-  }
-  /* the site's own idiom for keeping a phrase whole on a narrow screen (see
-     the non-breaking spaces in .details-intro): a clock split into '9:30' and
-     'AM', or a zone name into 'India' and 'Time', reads as a mistake */
-  const nb = s => String(s).replace(/ /g, '\u00A0');
-  const clockAt    = (ms, tz) => nb(fmtAt(ms, tz, { hour:'numeric', minute:'2-digit', hour12:true }));
-  /* en-GB for dates ('Monday 30 November', exactly how the schedule cards
-     above read them) but en-US for the clock, which is the only locale of
-     the two that gives a plain '9:30 AM' rather than '09:30 am' */
-  const dayAt      = (ms, tz) => fmtAt(ms, tz, { weekday:'long', day:'numeric', month:'long' }, 'en-GB');
-  const shortDayAt = (ms, tz) => nb(fmtAt(ms, tz, { day:'numeric', month:'short' }, 'en-GB'));
-
-  /* "India Time" where the engine knows the name, "GMT+5:30" where it
-     doesn't. Either is unambiguous for someone watching from another
-     country, which a bare "9:30 AM" is not. */
-  function zoneName(ms, tz){
-    const forms = ['shortGeneric', 'short'];
-    for(let i=0;i<forms.length;i++){
-      try{
-        const part = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: forms[i] })
-          .formatToParts(new Date(ms)).find(p => p.type === 'timeZoneName');
-        if(part && part.value) return nb(part.value);
-      }catch(e){}
-    }
-    return '';
-  }
-
-  /* the same instant read in the visitor's own zone — returned only when it
-     actually differs from the venue's, so guests already in India aren't
-     told the same time twice. Comparing the identifiers wouldn't do:
-     browsers hand back aliases (Asia/Calcutta for Asia/Kolkata), so this
-     compares what the two zones actually render. */
-  function visitorTime(ms, tz){
-    let localTz = tz;
-    try{ localTz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; }catch(e){}
-    const same = { year:'numeric', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit', hour12:false };
-    if(fmtAt(ms, tz, same) === fmtAt(ms, localTz, same)) return '';
-    return shortDayAt(ms, localTz) + ', ' + clockAt(ms, localTz);
-  }
 
   /* the instants the card's wording turns on, read off the schedule row the
      stream covers */
@@ -2376,12 +2416,11 @@ const DetailsRenderer = (function(){
 
     const couple = wedding.groom + ' and ' + wedding.bride;
     stage.innerHTML =
-      '<div class="live-stage-panel" role="dialog" aria-modal="true" aria-label="Wedding live stream">' +
+      '<div class="live-stage-panel" role="dialog" aria-label="Wedding live stream">' +
         '<button type="button" class="live-stage-close" aria-label="Close the live stream">&#215;</button>' +
         '<p class="eyebrow live-stage-eyebrow">' +
           (live ? '<span class="live-dot" aria-hidden="true"></span>' : '') +
           'Live Stream</p>' +
-        '<h2 class="live-stage-heading">' + heading + '</h2>' +
         '<div class="live-stage-player">' +
           '<iframe id="liveStageFrame" src="https://www.youtube-nocookie.com/embed/' + id + '?rel=0"' +
           ' title="' + attr(couple + ' — wedding live stream') + '"' +
@@ -2389,10 +2428,12 @@ const DetailsRenderer = (function(){
           ' allow="encrypted-media; picture-in-picture; web-share; fullscreen"' +
           ' allowfullscreen></iframe>' +
         '</div>' +
+        '<p class="live-stage-heading">' + heading + '</p>' +
+        '<p class="live-stage-sub">' + attr(couple) + '</p>' +
         '<div class="live-stage-foot">' +
+          '<button type="button" class="live-stage-dismiss">Close</button>' +
           '<a class="live-stage-link" href="https://www.youtube.com/watch?v=' + id + '"' +
-          ' target="_blank" rel="noopener noreferrer">Watch on YouTube &#8599;</a>' +
-          '<button type="button" class="live-stage-dismiss">Continue to the invitation &#8595;</button>' +
+          ' target="_blank" rel="noopener noreferrer">Watch on YouTube</a>' +
         '</div>' +
       '</div>';
     stage.hidden = false;
@@ -2406,10 +2447,7 @@ const DetailsRenderer = (function(){
     }
     stage.querySelector('.live-stage-dismiss').addEventListener('click', close);
     stage.querySelector('.live-stage-close').addEventListener('click', close);
-    /* the dimmed page around the card closes it too, the way any popup
-       behaves — but only the backdrop itself, never a stray click that
-       happened to bubble up out of the card */
-    stage.addEventListener('click', function(e){ if(e.target === stage) close(); });
+
     document.addEventListener('keydown', function(e){
       if(e.key === 'Escape' && !stage.hidden) close();
     });
