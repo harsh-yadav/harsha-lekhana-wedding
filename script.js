@@ -2329,6 +2329,87 @@ const DetailsRenderer = (function(){
      the way in — and it takes itself down again at midnight, in the venue's
      timezone rather than the visitor's, because it belongs to the day the
      wedding happens on and not to whatever day it is where they are. */
+  /* The player itself, over the whole page, on the day of the wedding. The
+     bar below is the way back to it once this has been dismissed; this is
+     the thing a guest opening the page that morning is actually here for.
+     It is an overlay rather than the first thing in the page because the
+     music gate locks scrolling until it has been answered — in the flow of
+     the page this would sit above a lock the guest could not reach past. */
+  const STAGE_DISMISS_KEY = 'weddingLiveStageDismissed';
+
+  function renderLiveStage(){
+    const stage = document.getElementById('liveStage');
+    if(!stage) return;
+    const ls = wedding.liveStream || {};
+    const url = ls.url ? String(ls.url).trim() : '';
+    const plan = streamPlan();
+    const id = (url.match(YT_ID) || [])[1] || null;
+    /* no video id, nothing to embed: a channel-handle URL has none, and the
+       bar's link is the right answer there rather than an empty frame */
+    if(!wedding.features.liveStream || !/^https:\/\//i.test(url) || !id || plan.startsAt == null){
+      stage.remove();
+      return;
+    }
+
+    const tz = plan.tz;
+    const dayStart = zonedToInstant(wedding.weddingDate, '00:00', tz);
+    const dayEnd = dayStart + 86400000;
+    const now = Date.now();
+    let dismissed = false;
+    try{ dismissed = sessionStorage.getItem(STAGE_DISMISS_KEY) === '1'; }catch(e){}
+    if(dismissed || now < dayStart || now >= dayEnd){ stage.hidden = true; return; }
+
+    const live = now >= plan.startsAt && now < plan.endsAt;
+    const over = now >= plan.endsAt;
+    const zone = zoneName(plan.startsAt, tz);
+    const heading = live ? 'Live now'
+                  : over ? 'The ceremony, as it happened'
+                  : 'The ceremony begins at ' + clockAt(plan.startsAt, tz) + (zone ? ' ' + zone : '');
+
+    const couple = wedding.groom + ' and ' + wedding.bride;
+    stage.innerHTML =
+      '<div class="live-stage-panel" role="dialog" aria-modal="true" aria-label="Wedding live stream">' +
+        '<p class="eyebrow live-stage-eyebrow">' +
+          (live ? '<span class="live-dot" aria-hidden="true"></span>' : '') +
+          'Live Stream</p>' +
+        '<h2 class="live-stage-heading">' + heading + '</h2>' +
+        '<div class="live-stage-player">' +
+          '<iframe id="liveStageFrame" src="https://www.youtube-nocookie.com/embed/' + id + '?rel=0"' +
+          ' title="' + attr(couple + ' — wedding live stream') + '"' +
+          ' referrerpolicy="strict-origin-when-cross-origin"' +
+          ' allow="encrypted-media; picture-in-picture; web-share; fullscreen"' +
+          ' allowfullscreen></iframe>' +
+        '</div>' +
+        '<div class="live-stage-foot">' +
+          '<a class="live-stage-link" href="https://www.youtube.com/watch?v=' + id + '"' +
+          ' target="_blank" rel="noopener noreferrer">Watch on YouTube &#8599;</a>' +
+          '<button type="button" class="live-stage-dismiss">Continue to the invitation &#8595;</button>' +
+        '</div>' +
+      '</div>';
+    stage.hidden = false;
+    document.documentElement.classList.add('has-live-stage');
+
+    function close(){
+      try{ sessionStorage.setItem(STAGE_DISMISS_KEY, '1'); }catch(e){}
+      stage.hidden = true;
+      document.documentElement.classList.remove('has-live-stage');
+      renderLiveBar();
+    }
+    stage.querySelector('.live-stage-dismiss').addEventListener('click', close);
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && !stage.hidden) close();
+    });
+
+    /* focus moving into the frame is the only signal available that the
+       guest has started the stream — the player is cross-origin, so there is
+       nothing else to listen to. Quite enough to stop the soundtrack playing
+       over the vows. */
+    const frame = document.getElementById('liveStageFrame');
+    window.addEventListener('blur', function(){
+      if(document.activeElement === frame && silenceMusic) silenceMusic();
+    });
+  }
+
   function renderLiveBar(){
     const bar = document.getElementById('liveBar');
     if(!bar) return;
@@ -2361,7 +2442,9 @@ const DetailsRenderer = (function(){
 
     function paint(){
       const now = Date.now();
-      if(dismissed || now < dayStart || now >= dayEnd){ hide(); schedule(now); return; }
+      let stageUp = false;
+      try{ stageUp = document.documentElement.classList.contains('has-live-stage'); }catch(e){}
+      if(dismissed || stageUp || now < dayStart || now >= dayEnd){ hide(); schedule(now); return; }
 
       const live = now >= plan.startsAt && now < plan.endsAt;
       const over = now >= plan.endsAt;
@@ -2445,6 +2528,7 @@ const DetailsRenderer = (function(){
     }
     renderGallery();
     renderLiveStream();
+    renderLiveStage();
     renderLiveBar();
   }
   return { init };
@@ -3160,6 +3244,11 @@ function tickCityTimes(){
    to guess at the first "interaction" (scroll, wheel, etc.) was
    unreliable. A click on the button is an unambiguous, always-valid
    gesture, so that's the one thing that starts playback. */
+/* initAudio keeps its audio element to itself, but the wedding-day player
+   has to be able to quiet it: nobody wants the soundtrack over the vows.
+   Set once initAudio decides there is music at all, null otherwise. */
+let silenceMusic = null;
+
 function initAudio(){
   const btn = document.getElementById('audioToggle');
   const tracks = Array.isArray(wedding.music) ? wedding.music : (wedding.music ? [wedding.music] : []);
@@ -3202,6 +3291,13 @@ function initAudio(){
   /* what the visitor asked for, kept separate from what the element is doing
      right now — the two diverge whenever the page is in the background */
   let wantsMusic = false;
+
+  silenceMusic = function(){
+    if(broken || audio.paused) return;
+    wantsMusic = false;
+    audio.pause();
+    setPlayingUI(false);
+  };
 
   function setPlayingUI(on){
     btn.dataset.playing = on ? 'true' : 'false';

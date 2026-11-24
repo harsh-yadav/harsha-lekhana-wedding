@@ -921,6 +921,52 @@ body.reduced-motion .golden-haze{ animation:none; }
 }
 @media (hover:hover){ .map-link:hover{ background:var(--accent); transform:translateY(-2px); } }
 
+/* ---- the wedding-day stage ----
+   The ceremony over the whole page, on the day and no other (see
+   renderLiveStage). Below the loader so it cannot flash before the page
+   has settled, above everything else so nothing of the story shows
+   through in front of it. */
+.live-stage{
+  position:fixed; inset:0; z-index:1700;
+  background:rgba(4,4,4,.97);
+  display:flex; align-items:center; justify-content:center;
+  padding:calc(20px + env(safe-area-inset-top)) var(--scene-pad) calc(20px + env(safe-area-inset-bottom));
+  overflow-y:auto;
+}
+.live-stage[hidden]{ display:none; }
+.live-stage-panel{ width:100%; max-width:860px; text-align:center; }
+.live-stage-eyebrow{ display:inline-flex; align-items:center; gap:10px; margin:0 0 12px; }
+.live-stage-heading{
+  font-family:var(--font-display); font-style:italic; font-weight:400;
+  font-size:clamp(1.375rem, 4vw, 2.125rem); line-height:1.25; color:var(--ivory); margin:0 0 20px;
+}
+/* 16:9 is the shape a live broadcast arrives in; the gold is the same
+   fuller weight the photographs carry, not the quieter information hairline */
+.live-stage-player{
+  position:relative; aspect-ratio:16/9; width:100%;
+  border:1px solid rgba(var(--gold-rgb),.55); background:#000; overflow:hidden;
+}
+.live-stage-player iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; }
+.live-stage-foot{
+  display:flex; align-items:center; justify-content:center; gap:clamp(14px, 4vw, 30px);
+  flex-wrap:wrap; margin-top:20px;
+}
+.live-stage-link{
+  font-family:var(--font-body); font-size:.8125rem; color:var(--gold); text-decoration:none;
+  border-bottom:1px solid rgba(var(--gold-rgb),.4); padding-bottom:5px;
+  transition:color .3s var(--ease-out), border-color .3s var(--ease-out);
+}
+.live-stage-dismiss{
+  font-family:var(--font-mono); font-size:.6875rem; letter-spacing:.14em; text-transform:uppercase;
+  color:rgba(248,246,242,.6); background:none; border:0; cursor:pointer; padding:10px 4px;
+  transition:color .3s var(--ease-out);
+}
+@media (hover:hover){
+  .live-stage-link:hover{ color:var(--accent); border-color:rgba(var(--gold-rgb),.85); }
+  .live-stage-dismiss:hover{ color:var(--ivory); }
+}
+@media (hover:none),(pointer:coarse){ .live-stage-dismiss{ padding:15px 6px; } }
+
 /* ---- the wedding-day bar ----
    Fixed above everything but the loader, and only ever on the day itself
    (see renderLiveBar). It overlays the top of the opening rather than
